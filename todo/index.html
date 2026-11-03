@@ -96,7 +96,7 @@ button,input,select,textarea{font:inherit}
 .setup-card p{color:var(--muted);font-size:13px;margin:0 0 14px}
 .setup-card .field{margin-bottom:10px}
 .setup-card input{width:100%}
-.board.hidden,.quick.hidden,.filters.hidden,.tag-manage-wrap.hidden,.stats.hidden,.week-strip.hidden{display:none !important}
+.board.hidden,.quick.hidden,.filters.hidden,.tag-manage-wrap.hidden,.stats.hidden,.week-strip.hidden,.cal-wrap.hidden{display:none !important}
 .due .time{margin-left:4px}
 
 
@@ -148,6 +148,69 @@ button,input,select,textarea{font:inherit}
   .app{padding:12px 10px 90px}
   .brand h1{font-size:20px}
 }
+
+/* View switch */
+.view-switch{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff;margin-right:4px}
+.view-switch button{border:none;background:transparent;padding:7px 14px;cursor:pointer;font-size:13px;color:var(--muted)}
+.view-switch button.on{background:var(--accent);color:#fff;font-weight:600}
+.view-switch button:not(.on):hover{background:#f3f4f6}
+
+/* Calendar shell */
+.cal-wrap{display:none;background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);border:1px solid var(--line);overflow:hidden;margin-bottom:12px}
+.cal-wrap.show{display:block}
+.cal-toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--line)}
+.cal-toolbar .cal-title{font-weight:650;font-size:14px;flex:1;min-width:140px}
+.cal-mode{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.cal-mode button{border:none;background:#fff;padding:5px 10px;cursor:pointer;font-size:12px;color:var(--muted)}
+.cal-mode button.on{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.cal-nav{display:flex;gap:4px;align-items:center}
+.cal-scroll{overflow:auto;max-height:calc(100vh - 260px);position:relative;-webkit-overflow-scrolling:touch}
+.cal-grid{display:grid;min-width:640px;position:relative}
+.cal-grid.day-mode{min-width:280px}
+.cal-head{display:contents}
+.cal-corner{position:sticky;top:0;left:0;z-index:5;background:#f9fafb;border-bottom:1px solid var(--line);border-right:1px solid var(--line)}
+.cal-day-head{position:sticky;top:0;z-index:4;background:#f9fafb;border-bottom:1px solid var(--line);padding:8px 4px;text-align:center;font-size:12px}
+.cal-day-head .wd{color:var(--muted);font-size:11px}
+.cal-day-head .dn{font-weight:700;font-size:16px;display:block;margin-top:2px}
+.cal-day-head.today .dn{background:var(--accent);color:#fff;width:28px;height:28px;line-height:28px;border-radius:50%;margin:2px auto 0}
+.cal-day-head.today{background:#eff6ff}
+.cal-allday-row{display:contents}
+.cal-allday-label{position:sticky;left:0;z-index:3;background:#fff;border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:6px 4px;font-size:11px;color:var(--muted);text-align:right}
+.cal-allday-cell{border-bottom:1px solid var(--line);border-right:1px solid var(--line);min-height:36px;padding:3px;background:#fafafa;display:flex;flex-direction:column;gap:2px}
+.cal-chip{font-size:11px;padding:2px 6px;border-radius:6px;color:#fff;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:550}
+.cal-chip.done{opacity:.55;text-decoration:line-through}
+.cal-body{display:contents}
+.cal-time-label{position:sticky;left:0;z-index:2;background:#fff;border-right:1px solid var(--line);border-bottom:1px solid #f3f4f6;font-size:10px;color:var(--muted);text-align:right;padding:0 6px 0 2px;height:24px;line-height:24px;user-select:none}
+.cal-slot{border-right:1px solid var(--line);border-bottom:1px solid #f3f4f6;height:24px;position:relative;cursor:pointer;background:#fff}
+.cal-slot:nth-child(even), .cal-slot.half{background:#fcfcfd}
+.cal-slot:hover{background:#eff6ff}
+.cal-day-col{position:relative;border-right:1px solid var(--line);grid-row: var(--body-start) / var(--body-end); background:
+  repeating-linear-gradient(to bottom, #fff 0, #fff 23px, #f3f4f6 23px, #f3f4f6 24px);}
+.cal-day-cols-wrap{display:contents}
+.cal-events-layer{position:relative;grid-column:2 / -1; grid-row: var(--body-start) / var(--body-end); pointer-events:none; z-index:1}
+.cal-day-events{position:absolute; top:0; bottom:0; pointer-events:none}
+.cal-block{position:absolute; border-radius:6px; padding:3px 6px; color:#fff; font-size:11px; overflow:hidden; cursor:grab; pointer-events:auto; box-shadow:0 1px 3px rgba(0,0,0,.15); z-index:2; min-height:18px; touch-action:none; user-select:none}
+.cal-block:active{cursor:grabbing}
+.cal-block.done{opacity:.55}
+.cal-block .bt{font-weight:650; line-height:1.2; word-break:break-word}
+.cal-block .bm{opacity:.9; font-size:10px; margin-top:1px}
+.cal-block .resize{position:absolute; left:0; right:0; bottom:0; height:8px; cursor:ns-resize}
+.cal-block.dragging, .cal-block.resizing{opacity:.85; z-index:10; box-shadow:0 6px 16px rgba(0,0,0,.25)}
+.cal-now{position:absolute; left:0; right:0; height:0; border-top:2px solid #ef4444; z-index:6; pointer-events:none}
+.cal-now::before{content:""; position:absolute; left:-5px; top:-5px; width:10px; height:10px; background:#ef4444; border-radius:50%}
+.cal-check{appearance:none;width:14px;height:14px;border:2px solid rgba(255,255,255,.85);border-radius:50%;cursor:pointer;background:transparent;flex:0 0 auto;position:relative;margin-right:4px;vertical-align:middle}
+.cal-check:checked{background:#fff}
+.cal-check:checked::after{content:"";position:absolute;left:3px;top:0px;width:4px;height:7px;border:solid var(--ok);border-width:0 2px 2px 0;transform:rotate(45deg)}
+.time-row{display:flex;gap:8px;flex-wrap:wrap}
+.time-row .field{flex:1;min-width:110px}
+.board.hidden-view{display:none !important}
+.cal-wrap.hidden-view{display:none !important}
+@media (max-width:640px){
+  .cal-scroll{max-height:calc(100vh - 220px)}
+  .cal-grid{min-width:100%}
+  .view-switch button{padding:7px 10px}
+}
+
 </style>
 </head>
 <body>
@@ -158,6 +221,10 @@ button,input,select,textarea{font:inherit}
       <p>私有数据经 GitHub 同步 · 本机可离线缓存 · 可导出备份</p>
     </div>
     <div class="toolbar">
+      <div class="view-switch" role="tablist" aria-label="视图">
+        <button type="button" id="viewBoard" class="on" role="tab" aria-selected="true">看板</button>
+        <button type="button" id="viewCal" role="tab" aria-selected="false">日历</button>
+      </div>
       <input type="search" id="search" placeholder="搜索标题 / 标签 / 备注" aria-label="搜索">
       <label class="switch"><input type="checkbox" id="autoBucket" checked> 按截止日期智能归组</label>
       <button class="btn sm" id="btnSyncNow" type="button" title="立即同步">↻ 同步</button>
@@ -206,10 +273,30 @@ button,input,select,textarea{font:inherit}
       <datalist id="tagDatalist"></datalist>
     </div>
     <input type="date" id="quickDue" title="截止日期">
+    <input type="time" id="quickStart" title="开始时间" step="1800">
+    <input type="time" id="quickEnd" title="结束时间" step="1800">
     <button class="btn primary" id="btnAdd" type="button">添加</button>
   </div>
 
   <div class="board" id="board"></div>
+
+  <div class="cal-wrap" id="calWrap" aria-label="日历视图">
+    <div class="cal-toolbar">
+      <div class="cal-nav">
+        <button type="button" class="btn sm" id="calPrev">‹ 上一周</button>
+        <button type="button" class="btn sm" id="calToday">今天</button>
+        <button type="button" class="btn sm" id="calNext">下一周 ›</button>
+      </div>
+      <div class="cal-title" id="calTitle">本周</div>
+      <div class="cal-mode" role="group" aria-label="日历粒度">
+        <button type="button" id="calModeWeek" class="on">周</button>
+        <button type="button" id="calModeDay">日</button>
+      </div>
+    </div>
+    <div class="cal-scroll" id="calScroll">
+      <div class="cal-grid" id="calGrid"></div>
+    </div>
+  </div>
 </div>
 
 
@@ -252,6 +339,7 @@ button,input,select,textarea{font:inherit}
 const KEY_V1 = "winnie-tasks-v1";
 const KEY_V2 = "winnie-tasks-v2"; // local cache
 const KEY_SYNC = "winnie-todo-sync-v1";
+const KEY_VIEW = "winnie-todo-view-v1"; // board | calendar
 const TODAY_STR = "2026-11-03"; // unused for public boot; kept for offline demos only
 
 const BUCKETS = [
@@ -289,6 +377,11 @@ let toastTimer = null;
 let dragId = null;
 let dragFrom = null;
 let touchProxy = null;
+let uiView = "board"; // board | calendar
+let calAnchor = null; // YYYY-MM-DD of week Monday or day
+let calMode = "week"; // week | day
+let calNowTimer = null;
+let calDrag = null; // {id, mode:'move'|'resize', startY, origStart, origEnd, day, colEl}
 
 function uid(){return "t"+Date.now().toString(36)+Math.random().toString(36).slice(2,8)}
 
@@ -721,6 +814,34 @@ function seedTasks(){
   return [];
 }
 
+
+function normalizeHHMM(v){
+  if(v==null || v==="") return null;
+  const s=String(v).trim();
+  let m=/^(\d{1,2}):(\d{2})$/.exec(s);
+  if(!m) return null;
+  let h=+m[1], mi=+m[2];
+  if(h<0||h>23||mi<0||mi>59) return null;
+  return String(h).padStart(2,"0")+":"+String(mi).padStart(2,"0");
+}
+function minutesOf(hhmm){
+  const n=normalizeHHMM(hhmm); if(!n) return null;
+  const [h,m]=n.split(":").map(Number); return h*60+m;
+}
+function hhmmOf(mins){
+  let m=((mins%1440)+1440)%1440;
+  const h=Math.floor(m/60), mm=m%60;
+  return String(h).padStart(2,"0")+":"+String(mm).padStart(2,"0");
+}
+function snapMin(mins, step){
+  step=step||30;
+  return Math.round(mins/step)*step;
+}
+function hasTimeSlot(t){
+  return !!(t && t.due && normalizeHHMM(t.startTime) && normalizeHHMM(t.endTime)
+    && minutesOf(t.startTime) < minutesOf(t.endTime));
+}
+
 function normalizeTask(raw){
   const due = raw.due || null;
   const hist = Array.isArray(raw.moveHistory) ? raw.moveHistory.slice(-20).map(h=>({
@@ -742,6 +863,8 @@ function normalizeTask(raw){
     done: !!(raw.done||raw.d),
     due: due,
     dueTime: raw.dueTime || null,
+    startTime: normalizeHHMM(raw.startTime) || null,
+    endTime: normalizeHHMM(raw.endTime) || null,
     note: raw.note || "",
     important: !!raw.important,
     tag: raw.tag || "其他",
@@ -1189,6 +1312,9 @@ function addTask(partial){
     title,
     tag: partial.tag || "其他",
     due: partial.due || null,
+    dueTime: partial.dueTime || null,
+    startTime: partial.startTime || null,
+    endTime: partial.endTime || null,
     note: partial.note || "",
     bucket: partial.bucket || (partial.due ? suggestBucket({done:false,due:partial.due,bucket:"later"}, today()) : "today"),
     weight: partial.weight || null,
@@ -1412,7 +1538,7 @@ function renderTask(task, now){
         '<div class="title'+(task.done?" struck":"")+'">'+escapeHtml(task.title)+'</div>'+
         '<div class="meta">'+
           '<span class="tag" style="background:'+tagColor(task.tag)+'">'+escapeHtml(task.tag)+'</span>'+
-          (dueLabel?'<span class="due '+dueCls+'">'+escapeHtml(dueLabel)+escapeHtml(formatDueTime(task))+'</span>':'')+
+          (dueLabel?'<span class="due '+dueCls+'">'+escapeHtml(dueLabel)+escapeHtml(hasTimeSlot(task)?(' '+task.startTime+'–'+task.endTime):formatDueTime(task))+'</span>':'')+
           (task.weight?'<span class="weight">占比 '+escapeHtml(task.weight)+'</span>':'')+
           postBadge+compBadge+
         '</div>'+
@@ -1432,6 +1558,8 @@ function renderTask(task, now){
       '<div class="field"><label>标题</label><input data-f="title" value="'+escapeHtml(task.title)+'"></div>'+
       '<div class="field"><label>截止日期</label><input data-f="due" type="date" value="'+(task.due||"")+'"></div>'+
       '<div class="field"><label>截止时间（可选）</label><input data-f="dueTime" type="time" value="'+(task.dueTime||"")+'"></div>'+
+      '<div class="time-row"><div class="field"><label>开始时间（日历时段）</label><input data-f="startTime" type="time" step="1800" value="'+(task.startTime||"")+'"></div>'+
+      '<div class="field"><label>结束时间</label><input data-f="endTime" type="time" step="1800" value="'+(task.endTime||"")+'"></div></div>'+
       '<div class="field"><label>标签</label><div class="tag-combo"><select data-f="tag"></select></div></div>'+
       '<div class="field"><label>考试占比（可选）</label><input data-f="weight" placeholder="如 47.5%" value="'+escapeHtml(task.weight||"")+'"></div>'+
       '<div class="field"><label>备注</label><textarea data-f="note">'+escapeHtml(task.note||"")+'</textarea></div>'+
@@ -1470,6 +1598,8 @@ function renderTask(task, now){
       const newTitle=panel.querySelector('[data-f="title"]').value.trim()||task.title;
       const newDue=panel.querySelector('[data-f="due"]').value||null;
       const newDueTime=panel.querySelector('[data-f="dueTime"]').value||null;
+      const newStart=normalizeHHMM(panel.querySelector('[data-f="startTime"]').value)||null;
+      const newEnd=normalizeHHMM(panel.querySelector('[data-f="endTime"]').value)||null;
       const newTag=resolveTagInput(panel.querySelector('[data-f="tag"]').value)||"其他";
       const newWeight=panel.querySelector('[data-f="weight"]').value.trim()||null;
       const newNote=panel.querySelector('[data-f="note"]').value;
@@ -1488,6 +1618,8 @@ function renderTask(task, now){
       task.title=newTitle;
       task.due=newDue;
       task.dueTime=newDueTime;
+      task.startTime=newStart;
+      task.endTime=newEnd;
       task.tag=newTag;
       task.weight=newWeight;
       task.note=newNote;
@@ -1667,14 +1799,451 @@ function renderBucket(bucket, now){
   return col;
 }
 
+
+/* ===== Calendar view (Outlook-style week/day) ===== */
+const CAL_START_MIN = 7*60;   // 07:00
+const CAL_END_MIN = 24*60;    // 24:00
+const CAL_STEP = 30;
+const CAL_PX = 24;            // px per 30 min
+
+function loadViewPref(){
+  try{
+    const v=localStorage.getItem(KEY_VIEW);
+    if(v==="calendar"||v==="board") uiView=v;
+    const m=localStorage.getItem(KEY_VIEW+"-mode");
+    if(m==="week"||m==="day") calMode=m;
+  }catch(e){}
+  if(!calAnchor) calAnchor = startOfWeek(today());
+  // phone: default day mode if narrow and first visit without mode saved
+  try{
+    if(!localStorage.getItem(KEY_VIEW+"-mode") && window.matchMedia && window.matchMedia("(max-width:640px)").matches){
+      calMode="day";
+      calAnchor=today();
+    }
+  }catch(e){}
+}
+function saveViewPref(){
+  try{
+    localStorage.setItem(KEY_VIEW, uiView);
+    localStorage.setItem(KEY_VIEW+"-mode", calMode);
+  }catch(e){}
+}
+function setView(v){
+  uiView = v==="calendar" ? "calendar" : "board";
+  saveViewPref();
+  const b=document.getElementById("viewBoard");
+  const c=document.getElementById("viewCal");
+  if(b){ b.classList.toggle("on", uiView==="board"); b.setAttribute("aria-selected", uiView==="board"?"true":"false"); }
+  if(c){ c.classList.toggle("on", uiView==="calendar"); c.setAttribute("aria-selected", uiView==="calendar"?"true":"false"); }
+  updateVisibility();
+  render();
+  if(uiView==="calendar"){
+    setTimeout(scrollCalToNow, 30);
+    startCalNowTimer();
+  }else{
+    stopCalNowTimer();
+  }
+}
+function startCalNowTimer(){
+  stopCalNowTimer();
+  calNowTimer=setInterval(()=>{ if(uiView==="calendar") updateCalNowLine(); }, 60000);
+}
+function stopCalNowTimer(){ if(calNowTimer){ clearInterval(calNowTimer); calNowTimer=null; } }
+
+function calDays(){
+  if(calMode==="day"){
+    if(!calAnchor) calAnchor=today();
+    return [calAnchor];
+  }
+  const mon = startOfWeek(calAnchor || today());
+  calAnchor = mon;
+  const days=[];
+  for(let i=0;i<7;i++) days.push(addDays(mon,i));
+  return days;
+}
+function calTitleText(days){
+  if(calMode==="day"){
+    const d=parseYMD(days[0]);
+    const w=["日","一","二","三","四","五","六"][d.getDay()];
+    return (d.getMonth()+1)+"月"+d.getDate()+"日 周"+w;
+  }
+  const a=parseYMD(days[0]), b=parseYMD(days[6]);
+  return a.getFullYear()+"年 "+(a.getMonth()+1)+"/"+a.getDate()+" – "+(b.getMonth()+1)+"/"+b.getDate();
+}
+function slotCount(){ return (CAL_END_MIN - CAL_START_MIN) / CAL_STEP; }
+function yOfMin(mins){ return ((mins - CAL_START_MIN) / CAL_STEP) * CAL_PX; }
+function minOfY(y){ return CAL_START_MIN + (y / CAL_PX) * CAL_STEP; }
+
+function layoutOverlaps(events){
+  // events: {id, startMin, endMin, task}
+  const sorted=[...events].sort((a,b)=>a.startMin-b.startMin || b.endMin-a.endMin);
+  const clusters=[];
+  let cur=null;
+  sorted.forEach(ev=>{
+    if(!cur || ev.startMin >= cur.maxEnd){
+      cur={items:[ev], maxEnd:ev.endMin};
+      clusters.push(cur);
+    }else{
+      cur.items.push(ev);
+      if(ev.endMin>cur.maxEnd) cur.maxEnd=ev.endMin;
+    }
+  });
+  const out=[];
+  clusters.forEach(cl=>{
+    const cols=[];
+    cl.items.forEach(ev=>{
+      let placed=false;
+      for(let i=0;i<cols.length;i++){
+        const last=cols[i][cols[i].length-1];
+        if(last.endMin <= ev.startMin){
+          cols[i].push(ev); ev.col=i; placed=true; break;
+        }
+      }
+      if(!placed){ ev.col=cols.length; cols.push([ev]); }
+    });
+    const n=cols.length;
+    cl.items.forEach(ev=>{
+      out.push({...ev, colCount:n, col:ev.col});
+    });
+  });
+  return out;
+}
+
+function tasksForDay(day){
+  return state.tasks.filter(t=>taskMatches(t) && t.due===day);
+}
+function timedForDay(day){
+  return tasksForDay(day).filter(t=>hasTimeSlot(t)).map(t=>({
+    id:t.id, task:t,
+    startMin: minutesOf(t.startTime),
+    endMin: minutesOf(t.endTime)
+  }));
+}
+function alldayForDay(day){
+  return tasksForDay(day).filter(t=>!hasTimeSlot(t));
+}
+
+function renderCalendar(){
+  const wrap=document.getElementById("calWrap");
+  const grid=document.getElementById("calGrid");
+  if(!wrap||!grid) return;
+  const days=calDays();
+  document.getElementById("calTitle").textContent=calTitleText(days);
+  document.getElementById("calModeWeek").classList.toggle("on", calMode==="week");
+  document.getElementById("calModeDay").classList.toggle("on", calMode==="day");
+  document.getElementById("calPrev").textContent = calMode==="day" ? "‹ 前一天" : "‹ 上一周";
+  document.getElementById("calNext").textContent = calMode==="day" ? "后一天 ›" : "下一周 ›";
+
+  const nSlots=slotCount();
+  const nDays=days.length;
+  const todayStr=today();
+  // CSS grid: time col + days
+  // rows: 1 head, 1 allday, then nSlots time rows
+  // We'll use a structure: sticky heads + body with absolute event layers per day
+
+  grid.className="cal-grid"+(calMode==="day"?" day-mode":"");
+  grid.style.gridTemplateColumns = "52px repeat("+nDays+", minmax(0,1fr))";
+  // Use a simpler DOM: head row, allday row, then a body area with time labels + day columns
+
+  let html="";
+  // Head
+  html += '<div class="cal-corner" style="grid-column:1;grid-row:1"></div>';
+  days.forEach((day,i)=>{
+    const d=parseYMD(day);
+    const w=["日","一","二","三","四","五","六"][d.getDay()];
+    const isToday=day===todayStr;
+    html += '<div class="cal-day-head'+(isToday?" today":"")+'" style="grid-column:'+(i+2)+';grid-row:1" data-day="'+day+'">'+
+      '<span class="wd">周'+w+'</span><span class="dn">'+d.getDate()+'</span></div>';
+  });
+  // All-day
+  html += '<div class="cal-allday-label" style="grid-column:1;grid-row:2">全天/DDL</div>';
+  days.forEach((day,i)=>{
+    html += '<div class="cal-allday-cell" style="grid-column:'+(i+2)+';grid-row:2" data-allday="'+day+'"></div>';
+  });
+  // Body: time labels + day columns as a tall area
+  const bodyStart=3;
+  const bodyEnd=bodyStart+nSlots;
+  grid.style.setProperty("--body-start", String(bodyStart));
+  grid.style.setProperty("--body-end", String(bodyEnd));
+  for(let s=0;s<nSlots;s++){
+    const mins=CAL_START_MIN + s*CAL_STEP;
+    const label = (mins%60===0) ? hhmmOf(mins) : "";
+    html += '<div class="cal-time-label" style="grid-column:1;grid-row:'+(bodyStart+s)+'">'+label+'</div>';
+    days.forEach((day,i)=>{
+      html += '<div class="cal-slot'+(mins%60===0?"":" half")+'" style="grid-column:'+(i+2)+';grid-row:'+(bodyStart+s)+'" data-day="'+day+'" data-min="'+mins+'"></div>';
+    });
+  }
+  grid.innerHTML=html;
+
+  // All-day chips
+  days.forEach((day,i)=>{
+    const cell=grid.querySelector('[data-allday="'+day+'"]');
+    if(!cell) return;
+    alldayForDay(day).forEach(t=>{
+      const chip=document.createElement("div");
+      chip.className="cal-chip"+(t.done?" done":"");
+      chip.style.background=tagColor(t.tag);
+      chip.title=t.title+(t.dueTime?(" · "+t.dueTime):"");
+      chip.textContent=(t.dueTime?(t.dueTime+" "):"")+t.title;
+      chip.onclick=(e)=>{ e.stopPropagation(); openTaskEdit(t.id); };
+      cell.appendChild(chip);
+    });
+  });
+
+  // Timed blocks — overlay per day column using absolute positioning relative to first slot of that day
+  days.forEach((day, di)=>{
+    const firstSlot=grid.querySelector('.cal-slot[data-day="'+day+'"][data-min="'+CAL_START_MIN+'"]');
+    if(!firstSlot) return;
+    // Create overlay positioned over the day's column slots
+    const overlay=document.createElement("div");
+    overlay.className="cal-day-overlay";
+    overlay.dataset.day=day;
+    overlay.style.cssText="position:relative;grid-column:"+(di+2)+";grid-row:"+bodyStart+" / "+bodyEnd+";pointer-events:none;z-index:2;";
+    // Absolute container filling the area
+    const layer=document.createElement("div");
+    layer.style.cssText="position:absolute;inset:0;pointer-events:none;";
+    overlay.appendChild(layer);
+    grid.appendChild(overlay);
+
+    const laid=layoutOverlaps(timedForDay(day).map(ev=>{
+      // clamp to visible range
+      let sm=Math.max(ev.startMin, CAL_START_MIN);
+      let em=Math.min(ev.endMin, CAL_END_MIN);
+      if(em<=sm) em=sm+CAL_STEP;
+      return {...ev, startMin:sm, endMin:em};
+    }));
+    laid.forEach(ev=>{
+      const t=ev.task;
+      const top=yOfMin(ev.startMin);
+      const height=Math.max(yOfMin(ev.endMin)-top, 18);
+      const widthPct=100/ev.colCount;
+      const leftPct=ev.col*widthPct;
+      const block=document.createElement("div");
+      block.className="cal-block"+(t.done?" done":"");
+      block.dataset.id=t.id;
+      block.style.top=top+"px";
+      block.style.height=height+"px";
+      block.style.left="calc("+leftPct+"% + 1px)";
+      block.style.width="calc("+widthPct+"% - 3px)";
+      block.style.background=tagColor(t.tag);
+      block.innerHTML=
+        '<div style="display:flex;align-items:flex-start;gap:2px">'+
+          '<input class="cal-check" type="checkbox" '+(t.done?"checked":"")+' title="完成" aria-label="完成">'+
+          '<div style="min-width:0;flex:1">'+
+            '<div class="bt">'+escapeHtml(t.title)+'</div>'+
+            '<div class="bm">'+escapeHtml(t.startTime)+"–"+escapeHtml(t.endTime)+'</div>'+
+          '</div>'+
+        '</div>'+
+        '<div class="resize" title="拖底边调整时长"></div>';
+      block.querySelector(".cal-check").addEventListener("click", e=>{ e.stopPropagation(); toggleDone(t.id); });
+      block.addEventListener("click", e=>{
+        if(e.target.closest(".cal-check,.resize")) return;
+        if(calDrag) return;
+        openTaskEdit(t.id);
+      });
+      setupCalBlockDrag(block, t, day, layer);
+      layer.appendChild(block);
+    });
+  });
+
+  // Click empty slot → create
+  grid.querySelectorAll(".cal-slot").forEach(slot=>{
+    slot.addEventListener("click", ()=>{
+      const day=slot.dataset.day;
+      const min=+slot.dataset.min;
+      promptNewTimedTask(day, min);
+    });
+  });
+
+  updateCalNowLine();
+}
+
+function openTaskEdit(id){
+  state.tasks.forEach(x=>x.editing=false);
+  const t=state.tasks.find(x=>x.id===id);
+  if(!t) return;
+  t.editing=true;
+  // Switch to board so edit panel is usable, or keep calendar and show a mini modal.
+  // Spec: click block opens existing edit UI — use board temporarily if needed.
+  if(uiView==="calendar"){
+    // Stay on calendar but flip to board briefly for edit? Better: switch view to board and scroll.
+    setView("board");
+    // after render, editing flag is set; render already called by setView
+  }else{
+    render();
+  }
+}
+
+function promptNewTimedTask(day, startMin){
+  const title=(prompt("新任务标题：")||"").trim();
+  if(!title) return;
+  let tag="其他";
+  const tags=tagNames();
+  const raw=prompt("标签（"+tags.join("/")+"）：", tags[0]||"其他");
+  if(raw!=null) tag=resolveTagInput(raw)||"其他";
+  const endMin=Math.min(startMin+60, CAL_END_MIN);
+  const st=hhmmOf(startMin), et=hhmmOf(endMin);
+  addTask({
+    title, tag, due: day, dueTime: st,
+    startTime: st, endTime: et,
+    bucket: suggestBucket({done:false,due:day,bucket:"later"}, today())
+  });
+  if(uiView==="calendar") renderCalendar();
+}
+
+function setupCalBlockDrag(block, task, day, layer){
+  let mode=null; // move | resize
+  let startY=0, origStart=0, origEnd=0, origDay=day;
+  let curDay=day;
+  let moved=false;
+
+  const onDown=(e)=>{
+    if(e.button!==undefined && e.button!==0) return;
+    if(e.target.closest(".cal-check")) return;
+    mode = e.target.closest(".resize") ? "resize" : "move";
+    startY=e.clientY;
+    origStart=minutesOf(task.startTime);
+    origEnd=minutesOf(task.endTime);
+    origDay=day; curDay=day;
+    moved=false;
+    calDrag={id:task.id, mode};
+    block.classList.add(mode==="resize"?"resizing":"dragging");
+    block.setPointerCapture(e.pointerId);
+    e.preventDefault();
+    e.stopPropagation();
+  };
+  const onMove=(e)=>{
+    if(!calDrag || calDrag.id!==task.id) return;
+    const dy=e.clientY-startY;
+    if(Math.abs(dy)>3) moved=true;
+    const dMin=snapMin(Math.round(dy / CAL_PX) * CAL_STEP, CAL_STEP);
+    if(mode==="move"){
+      let dur=origEnd-origStart;
+      let ns=snapMin(origStart+dMin, CAL_STEP);
+      ns=Math.max(CAL_START_MIN, Math.min(ns, CAL_END_MIN-CAL_STEP));
+      let ne=ns+dur;
+      if(ne>CAL_END_MIN){ ne=CAL_END_MIN; ns=ne-dur; if(ns<CAL_START_MIN) ns=CAL_START_MIN; }
+      block.style.top=yOfMin(ns)+"px";
+      block.style.height=Math.max(yOfMin(ne)-yOfMin(ns),18)+"px";
+      block.dataset._ns=String(ns);
+      block.dataset._ne=String(ne);
+      // detect day under pointer
+      const under=document.elementFromPoint(e.clientX, e.clientY);
+      const slot=under && under.closest && under.closest(".cal-slot");
+      const head=under && under.closest && under.closest(".cal-day-head");
+      const allday=under && under.closest && under.closest("[data-allday]");
+      const ov=under && under.closest && under.closest(".cal-day-overlay");
+      if(slot) curDay=slot.dataset.day;
+      else if(head) curDay=head.dataset.day;
+      else if(allday) curDay=allday.dataset.allday;
+      else if(ov) curDay=ov.dataset.day;
+      block.dataset._day=curDay;
+    }else{
+      let ne=snapMin(origEnd+dMin, CAL_STEP);
+      ne=Math.max(origStart+CAL_STEP, Math.min(ne, CAL_END_MIN));
+      block.style.height=Math.max(yOfMin(ne)-yOfMin(origStart),18)+"px";
+      block.dataset._ns=String(origStart);
+      block.dataset._ne=String(ne);
+      block.dataset._day=origDay;
+    }
+  };
+  const onUp=async (e)=>{
+    if(!calDrag || calDrag.id!==task.id) return;
+    block.classList.remove("dragging","resizing");
+    try{ block.releasePointerCapture(e.pointerId); }catch(_){}
+    const ns=block.dataset._ns? +block.dataset._ns : null;
+    const ne=block.dataset._ne? +block.dataset._ne : null;
+    const nd=block.dataset._day || origDay;
+    calDrag=null;
+    if(!moved || ns==null || ne==null){ return; }
+    await applyCalTimeMove(task.id, nd, hhmmOf(ns), hhmmOf(ne));
+  };
+  block.addEventListener("pointerdown", onDown);
+  block.addEventListener("pointermove", onMove);
+  block.addEventListener("pointerup", onUp);
+  block.addEventListener("pointercancel", onUp);
+}
+
+async function applyCalTimeMove(id, newDue, newStart, newEnd){
+  const t=state.tasks.find(x=>x.id===id);
+  if(!t) return;
+  const oldDue=t.due||null;
+  let k=null;
+  if(oldDue && newDue && newDue!==oldDue){
+    if(newDue>oldDue) k="later";
+    else if(newDue<oldDue) k="earlier";
+  }
+  if(k==="later" && (t.postponeCount||0)>=4){
+    const ok=await requestFriction(t, t.bucket, null);
+    if(!ok){ render(); return; }
+  }
+  t.due=newDue;
+  t.startTime=newStart;
+  t.endTime=newEnd;
+  t.dueTime=newStart; // keep dueTime aligned with slot start
+  t.pinned=false;
+  if(!t.done){
+    t.bucket = state.autoBucket ? suggestBucket(t, today()) : (t.bucket||"later");
+  }
+  applyDueEdit(t, oldDue, newDue);
+  touchTask(t);
+  saveState();
+  render();
+  if(pendingPostponeModal && pendingPostponeModal._defer){
+    const tt=state.tasks.find(x=>x.id===pendingPostponeModal.taskId);
+    if(tt) showPostponeModal(tt, pendingPostponeModal.count);
+    else pendingPostponeModal=null;
+  }
+}
+
+function updateCalNowLine(){
+  const grid=document.getElementById("calGrid");
+  if(!grid) return;
+  grid.querySelectorAll(".cal-now").forEach(n=>n.remove());
+  const now=new Date();
+  const ymd=fmtDate(now);
+  const mins=now.getHours()*60+now.getMinutes();
+  if(mins<CAL_START_MIN || mins>CAL_END_MIN) return;
+  const days=calDays();
+  if(!days.includes(ymd)) return;
+  const di=days.indexOf(ymd);
+  const overlay=grid.querySelector('.cal-day-overlay[data-day="'+ymd+'"]');
+  const firstSlot=grid.querySelector('.cal-slot[data-day="'+ymd+'"][data-min="'+CAL_START_MIN+'"]');
+  const target = overlay ? overlay.firstChild : firstSlot;
+  if(!target) return;
+  const line=document.createElement("div");
+  line.className="cal-now";
+  line.style.top=yOfMin(mins)+"px";
+  if(overlay){
+    overlay.firstChild.appendChild(line);
+  }else{
+    // fallback: absolute on slot column — skip
+  }
+}
+function scrollCalToNow(){
+  const scroll=document.getElementById("calScroll");
+  if(!scroll) return;
+  const now=new Date();
+  const mins=now.getHours()*60+now.getMinutes();
+  const y=Math.max(0, yOfMin(mins)-80);
+  scroll.scrollTop = y + 70; // account for sticky head approx
+}
+
+
 function render(){
   const now=today();
   document.getElementById("autoBucket").checked = !!state.autoBucket;
   renderTagFilters();
   renderStats(now);
   const board=document.getElementById("board");
-  board.innerHTML="";
-  BUCKETS.forEach(b=>board.appendChild(renderBucket(b, now)));
+  if(uiView==="board"){
+    board.innerHTML="";
+    BUCKETS.forEach(b=>board.appendChild(renderBucket(b, now)));
+  }
+  if(uiView==="calendar"){
+    renderCalendar();
+  }
+  // keep edit panels reachable: if any task is editing while on calendar, also paint board lightly? skip
 }
 
 function exportJSON(){
@@ -1728,14 +2297,22 @@ function importJSON(file){
 // wire UI
 document.getElementById("btnAdd").onclick=()=>{
   const tagVal=resolveTagInput(document.getElementById("quickTag").value || "其他");
+  const qd=document.getElementById("quickDue").value || null;
+  const qs=normalizeHHMM(document.getElementById("quickStart").value)||null;
+  const qe=normalizeHHMM(document.getElementById("quickEnd").value)||null;
   addTask({
     title: document.getElementById("quickTitle").value,
     tag: tagVal,
-    due: document.getElementById("quickDue").value || null,
-    bucket: "today"
+    due: qd,
+    dueTime: qs || null,
+    startTime: qs,
+    endTime: qe,
+    bucket: qd ? suggestBucket({done:false,due:qd,bucket:"later"}, today()) : "today"
   });
   document.getElementById("quickTitle").value="";
   document.getElementById("quickTag").value=tagVal;
+  document.getElementById("quickStart").value="";
+  document.getElementById("quickEnd").value="";
 };
 document.getElementById("btnTagManage").onclick=()=>{
   state.tagPanelOpen=!state.tagPanelOpen;
@@ -1786,15 +2363,19 @@ function fillSyncForm(){
 function updateVisibility(){
   const ready = hasToken() && bootReady && (syncState==="ok" || syncState==="offline" || syncState==="syncing" || syncState==="error");
   const showData = hasToken() && bootReady;
-  ["stats","tagFilters","tagManageWrap","quick","board"].forEach(()=>{});
   const show = showData;
   document.getElementById("stats").classList.toggle("hidden", !show);
   document.getElementById("weekStrip").classList.toggle("hidden", !show);
   document.getElementById("tagFilters").classList.toggle("hidden", !show);
   document.getElementById("tagManageWrap").classList.toggle("hidden", !show);
   document.querySelector(".quick").classList.toggle("hidden", !show);
-  document.getElementById("board").classList.toggle("hidden", !show);
-  // Setup card: always available via settings; forced visible when no token
+  const board=document.getElementById("board");
+  const cal=document.getElementById("calWrap");
+  if(board) board.classList.toggle("hidden", !show || uiView!=="board");
+  if(cal){
+    cal.classList.toggle("hidden", !show || uiView!=="calendar");
+    cal.classList.toggle("show", show && uiView==="calendar");
+  }
   const setup=document.getElementById("setupCard");
   const force = !hasToken();
   if(force) setup.classList.remove("hidden");
@@ -1893,6 +2474,45 @@ document.addEventListener("visibilitychange", ()=>{
   }
 });
 
+
+document.getElementById("viewBoard").onclick=()=>setView("board");
+document.getElementById("viewCal").onclick=()=>setView("calendar");
+document.getElementById("calPrev").onclick=()=>{
+  if(calMode==="day") calAnchor=addDays(calAnchor||today(), -1);
+  else calAnchor=addDays(startOfWeek(calAnchor||today()), -7);
+  renderCalendar();
+};
+document.getElementById("calNext").onclick=()=>{
+  if(calMode==="day") calAnchor=addDays(calAnchor||today(), 1);
+  else calAnchor=addDays(startOfWeek(calAnchor||today()), 7);
+  renderCalendar();
+};
+document.getElementById("calToday").onclick=()=>{
+  if(calMode==="day") calAnchor=today();
+  else calAnchor=startOfWeek(today());
+  renderCalendar();
+  scrollCalToNow();
+};
+document.getElementById("calModeWeek").onclick=()=>{
+  calMode="week";
+  calAnchor=startOfWeek(calAnchor||today());
+  saveViewPref();
+  renderCalendar();
+};
+document.getElementById("calModeDay").onclick=()=>{
+  calMode="day";
+  // keep current day if possible
+  if(!calAnchor) calAnchor=today();
+  // if week anchor was Monday, jump to today if today in that week
+  const t=today();
+  const mon=startOfWeek(calAnchor);
+  if(t>=mon && t<=addDays(mon,6)) calAnchor=t;
+  saveViewPref();
+  renderCalendar();
+};
+
+
+loadViewPref();
 boot();
 
 // expose for tests
@@ -1905,7 +2525,9 @@ window.__todo = {
   addTag, renameTag, recolorTag, deleteTag, ensureTag, tagColor, tagNames, toggleDone,
   serializeState, mergeStates, hasToken,
   classifyMoveKind, recordMove, classifyCompletion, applyDueEdit, applyMoveCore,
-  weekStats, isChronic, BUCKET_RANK, normalizeTask
+  weekStats, isChronic, BUCKET_RANK, normalizeTask,
+  hasTimeSlot, renderCalendar, setView, applyCalTimeMove, normalizeHHMM, minutesOf, hhmmOf,
+  get uiView(){return uiView}, get calMode(){return calMode}, get calAnchor(){return calAnchor}
 };
 })();
 </script>

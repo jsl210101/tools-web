@@ -557,9 +557,14 @@ function deleteTag(name){
   return true;
 }
 
-function today(){
-  const d=new Date();
-  return fmtDate(d);
+
+function cloneTags(list){return (list||[]).map(t=>({name:String(t.name), color:String(t.color||"#6b7280")}));}
+function defaultTags(){return cloneTags(DEFAULT_TAGS);}
+function tagColor(name){
+  const t=(state.tags||[]).find(x=>x.name===name);
+  if(t) return t.color;
+  if(DEFAULT_TAG_COLORS[name]) return DEFAULT_TAG_COLORS[name];
+  return DEFAULT_TAG_COLORS["其他"]||"#6b7280";
 }
 function fmtDate(d){
   const y=d.getFullYear();

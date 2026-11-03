@@ -645,6 +645,27 @@ function seedTasks(){
   return [];
 }
 
+function normalizeTask(raw){
+  return {
+    id: raw.id || uid(),
+    title: String(raw.title||raw.t||"").trim() || "未命名任务",
+    done: !!(raw.done||raw.d),
+    due: raw.due || null,
+    dueTime: raw.dueTime || null,
+    note: raw.note || "",
+    important: !!raw.important,
+    tag: raw.tag || "其他",
+    bucket: raw.bucket || "later",
+    order: typeof raw.order==="number" ? raw.order : Date.now(),
+    weight: raw.weight || null,
+    pinned: !!raw.pinned,
+    created: raw.created || Date.now(),
+    completedAt: raw.completedAt || null,
+    updatedAt: typeof raw.updatedAt==="number" ? raw.updatedAt : (raw.created || Date.now()),
+    editing: false
+  };
+}
+
 function tryParseDueFromTitle(title){
   // 11/5 or 11.5 or 11-5 → 2026-MM-DD
   let m = /(\d{1,2})[./-](\d{1,2})/.exec(title);

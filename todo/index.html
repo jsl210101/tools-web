@@ -566,6 +566,10 @@ function tagColor(name){
   if(DEFAULT_TAG_COLORS[name]) return DEFAULT_TAG_COLORS[name];
   return DEFAULT_TAG_COLORS["其他"]||"#6b7280";
 }
+function today(){
+  const d=new Date();
+  return fmtDate(d);
+}
 function fmtDate(d){
   const y=d.getFullYear();
   const m=String(d.getMonth()+1).padStart(2,"0");

@@ -1,0 +1,1449 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>任务清单 · tools</title>
+<style>
+:root{
+  --bg:#f4f6f9;--card:#fff;--text:#1a1d26;--muted:#6b7280;--line:#e5e7eb;
+  --accent:#2563eb;--accent-soft:#eff6ff;--danger:#ef4444;--warn:#f59e0b;
+  --overdue:#dc2626;--soon:#d97706;--ok:#059669;--star:#f59e0b;
+  --shadow:0 1px 3px rgba(0,0,0,.06),0 4px 12px rgba(0,0,0,.04);
+  --radius:12px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+  font-size:15px;line-height:1.45;-webkit-tap-highlight-color:transparent}
+button,input,select,textarea{font:inherit}
+.app{max-width:1100px;margin:0 auto;padding:16px 14px 80px}
+.top{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-start;justify-content:space-between;margin-bottom:14px}
+.brand h1{margin:0;font-size:22px;font-weight:700}
+.brand p{margin:4px 0 0;color:var(--muted);font-size:13px}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.toolbar input[type=search],.toolbar select,.field input,.field select,.field textarea{
+  border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:#fff;outline:none}
+.toolbar input[type=search]:focus,.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+.btn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:8px 12px;cursor:pointer;color:var(--text)}
+.btn:hover{background:#f9fafb}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary:hover{filter:brightness(.95)}
+.btn.ghost{background:transparent}
+.btn.sm{padding:4px 8px;font-size:13px}
+.switch{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);user-select:none}
+.quick{display:flex;gap:8px;margin-bottom:14px;background:var(--card);padding:10px;border-radius:var(--radius);box-shadow:var(--shadow)}
+.quick input{flex:1;border:1px solid var(--line);border-radius:8px;padding:10px 12px;outline:none}
+.quick input:focus{border-color:var(--accent)}
+.quick select{min-width:88px;border:1px solid var(--line);border-radius:8px;padding:8px;background:#fff}
+.board{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.bucket{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);display:flex;flex-direction:column;min-height:180px;border:1px solid transparent;transition:border-color .15s,background .15s}
+.bucket.drag-over{border-color:var(--accent);background:var(--accent-soft)}
+.bucket-hd{display:flex;align-items:center;justify-content:space-between;padding:12px 12px 8px;gap:8px;position:sticky;top:0;background:inherit;border-radius:var(--radius) var(--radius) 0 0;z-index:1}
+.bucket-hd h2{margin:0;font-size:14px;font-weight:650;display:flex;align-items:center;gap:8px}
+.count{background:#eef2ff;color:#3730a3;font-size:12px;padding:2px 8px;border-radius:999px;font-weight:600}
+.bucket.done .count{background:#ecfdf5;color:#065f46}
+.list{padding:0 8px 10px;min-height:60px;flex:1}
+.task{background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px;margin:0 0 8px;cursor:grab;touch-action:none;position:relative;transition:box-shadow .15s,opacity .15s,transform .1s}
+.task:active{cursor:grabbing}
+.task.dragging{opacity:.45;transform:scale(.98)}
+.task.important{border-left:3px solid var(--star)}
+.task.overdue{border-color:#fecaca;background:#fff7f7}
+.task.soon{border-color:#fde68a;background:#fffbeb}
+.task.done-item{opacity:.72}
+.task-row{display:flex;gap:8px;align-items:flex-start}
+.check{appearance:none;width:18px;height:18px;margin-top:2px;border:2px solid #9ca3af;border-radius:50%;cursor:pointer;flex:0 0 auto;background:#fff;position:relative}
+.check:checked{background:var(--ok);border-color:var(--ok)}
+.check:checked::after{content:"";position:absolute;left:4px;top:1px;width:5px;height:9px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
+.body{flex:1;min-width:0}
+.title{font-weight:550;word-break:break-word}
+.title.struck{text-decoration:line-through;color:var(--muted);font-weight:500}
+.meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;align-items:center}
+.tag{font-size:11px;padding:2px 7px;border-radius:999px;font-weight:600;color:#fff}
+.due{font-size:12px;color:var(--muted)}
+.due.bad{color:var(--overdue);font-weight:600}
+.due.warn{color:var(--soon);font-weight:600}
+.weight{font-size:11px;background:#f3f4f6;color:#374151;padding:2px 6px;border-radius:6px}
+.note{margin-top:6px;font-size:12px;color:var(--muted);white-space:pre-wrap;word-break:break-word}
+.actions{display:flex;gap:2px;flex:0 0 auto}
+.iconbtn{border:none;background:transparent;cursor:pointer;padding:4px;border-radius:6px;color:#9ca3af;line-height:1;font-size:16px}
+.iconbtn:hover{background:#f3f4f6;color:#374151}
+.iconbtn.star.on{color:var(--star)}
+.handle{cursor:grab;color:#d1d5db;font-size:14px;padding:2px 4px;user-select:none}
+.edit-panel{margin-top:8px;padding-top:8px;border-top:1px dashed var(--line);display:grid;gap:8px}
+.field{display:grid;gap:4px}
+.field label{font-size:12px;color:var(--muted)}
+.field textarea{min-height:56px;resize:vertical}
+.edit-actions{display:flex;gap:8px;justify-content:flex-end}
+.empty{color:var(--muted);font-size:13px;padding:18px 8px;text-align:center}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#111827;color:#fff;padding:10px 14px;border-radius:10px;font-size:13px;display:none;z-index:50;box-shadow:var(--shadow);max-width:90vw;align-items:center;gap:10px}
+.toast.show{display:flex}
+.toast button{border:none;background:#374151;color:#fff;border-radius:6px;padding:4px 8px;cursor:pointer}
+.filters{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:4px 10px;font-size:12px;cursor:pointer;color:var(--muted)}
+.chip.on{background:var(--accent-soft);border-color:#bfdbfe;color:var(--accent);font-weight:600}
+.stats{font-size:12px;color:var(--muted);margin-bottom:10px}
+.collapse-btn{border:none;background:transparent;color:var(--muted);cursor:pointer;font-size:12px}
+
+.sync-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+.sync-status{font-size:12px;padding:4px 10px;border-radius:999px;background:#eef2ff;color:#3730a3}
+.sync-status.syncing{background:#fef3c7;color:#92400e}
+.sync-status.offline{background:#fee2e2;color:#991b1b}
+.sync-status.ok{background:#ecfdf5;color:#065f46}
+.sync-status.needsetup{background:#f3f4f6;color:#4b5563}
+.setup-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);max-width:560px;margin:24px auto}
+.setup-card h2{margin:0 0 8px;font-size:18px}
+.setup-card p{color:var(--muted);font-size:13px;margin:0 0 14px}
+.setup-card .field{margin-bottom:10px}
+.setup-card input{width:100%}
+.board.hidden,.quick.hidden,.filters.hidden,.tag-manage-wrap.hidden,.stats.hidden{display:none !important}
+.due .time{margin-left:4px}
+
+
+.btn.danger{background:#fff;border-color:#fecaca;color:var(--danger)}
+.btn.danger:hover{background:#fef2f2}
+.filters{align-items:center}
+.tag-manage-wrap{margin-bottom:12px}
+.tag-panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:12px;box-shadow:var(--shadow);margin-top:8px}
+.tag-panel.hidden{display:none}
+.tag-panel h3{margin:0 0 10px;font-size:14px}
+.tag-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.tag-row:last-child{border-bottom:none}
+.tag-row .swatch{width:22px;height:22px;border-radius:6px;border:1px solid var(--line);padding:0;cursor:pointer;background:none}
+.tag-row input[type=text]{flex:1;min-width:100px;border:1px solid var(--line);border-radius:8px;padding:6px 8px}
+.tag-row input[type=color]{width:36px;height:28px;border:none;background:transparent;padding:0;cursor:pointer}
+.tag-add{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px;padding-top:10px;border-top:1px dashed var(--line)}
+.tag-add input[type=text]{flex:1;min-width:120px;border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.tag-combo{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
+.tag-combo input[list]{min-width:110px;border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.quick .tag-combo{flex:0 0 auto}
+
+@media (max-width:640px){
+  .board{grid-template-columns:1fr}
+  .app{padding:12px 10px 90px}
+  .brand h1{font-size:20px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <div class="brand">
+      <h1>任务清单</h1>
+      <p>私有数据经 GitHub 同步 · 本机可离线缓存 · 可导出备份</p>
+    </div>
+    <div class="toolbar">
+      <input type="search" id="search" placeholder="搜索标题 / 标签 / 备注" aria-label="搜索">
+      <label class="switch"><input type="checkbox" id="autoBucket" checked> 按截止日期智能归组</label>
+      <button class="btn sm" id="btnSyncNow" type="button" title="立即同步">↻ 同步</button>
+      <button class="btn sm" id="btnSyncSettings" type="button">⚙ 同步设置</button>
+      <button class="btn sm" id="btnExport" type="button">导出 JSON</button>
+      <button class="btn sm" id="btnImport" type="button">导入 JSON</button>
+      <input type="file" id="importFile" accept="application/json,.json" hidden>
+    </div>
+  </div>
+
+  <div class="sync-bar"><span class="sync-status needsetup" id="syncStatus">未配置</span><span id="syncDetail" style="font-size:12px;color:var(--muted)"></span></div>
+
+  <div class="setup-card hidden" id="setupCard">
+    <h2>连接私有数据仓库</h2>
+    <p>页面是公开的，任务数据存在私有仓库。请粘贴只授权了 <code>tools-data</code> 的 GitHub Token（仅保存在本浏览器，不会上传到本页面仓库）。</p>
+    <div class="field"><label>GitHub Token</label><input type="password" id="cfgToken" placeholder="github_pat_..." autocomplete="off"></div>
+    <div class="field"><label>Owner</label><input type="text" id="cfgOwner" value="jsl210101"></div>
+    <div class="field"><label>Repo</label><input type="text" id="cfgRepo" value="tools-data"></div>
+    <div class="field"><label>Path</label><input type="text" id="cfgPath" value="todo/tasks.json"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button type="button" class="btn primary" id="btnSaveSync">保存并同步</button>
+      <button type="button" class="btn" id="btnClearSync">清除本机 Token</button>
+    </div>
+  </div>
+
+  <div class="stats" id="stats"></div>
+  <div class="filters" id="tagFilters"></div>
+  <div class="tag-manage-wrap" id="tagManageWrap">
+    <button type="button" class="btn sm" id="btnTagManage">管理标签</button>
+    <div class="tag-panel hidden" id="tagPanel" aria-live="polite">
+      <h3>管理标签</h3>
+      <div id="tagList"></div>
+      <div class="tag-add">
+        <input type="text" id="newTagName" placeholder="新标签名称" maxlength="24">
+        <input type="color" id="newTagColor" value="#2563eb" title="颜色">
+        <button type="button" class="btn sm primary" id="btnAddTag">添加标签</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="quick">
+    <input id="quickTitle" placeholder="添加任务，回车确认（可先选标签与日期）" autocomplete="off">
+    <div class="tag-combo">
+      <input id="quickTag" list="tagDatalist" placeholder="标签（可输入新建）" title="标签" autocomplete="off">
+      <datalist id="tagDatalist"></datalist>
+    </div>
+    <input type="date" id="quickDue" title="截止日期">
+    <button class="btn primary" id="btnAdd" type="button">添加</button>
+  </div>
+
+  <div class="board" id="board"></div>
+</div>
+
+<div class="toast" id="toast"><span id="toastMsg"></span><button type="button" id="toastUndo">撤销</button></div>
+
+<script>
+(function(){
+"use strict";
+
+const KEY_V1 = "winnie-tasks-v1";
+const KEY_V2 = "winnie-tasks-v2"; // local cache
+const KEY_SYNC = "winnie-todo-sync-v1";
+const TODAY_STR = "2026-11-03"; // unused for public boot; kept for offline demos only
+
+const BUCKETS = [
+  {id:"today", name:"今天 · 我的一天", emoji:"☀"},
+  {id:"tomorrow", name:"明天", emoji:"🌤"},
+  {id:"week", name:"本周", emoji:"📅"},
+  {id:"nextweek", name:"下周", emoji:"🗓"},
+  {id:"later", name:"本月 / 以后", emoji:"📌"},
+  {id:"done", name:"已完成", emoji:"✅"}
+];
+
+const DEFAULT_TAGS = [
+  {name:"1007", color:"#2563eb"},
+  {name:"2008", color:"#7c3aed"},
+  {name:"2304", color:"#0891b2"},
+  {name:"4002", color:"#db2777"},
+  {name:"4104", color:"#ea580c"},
+  {name:"科研", color:"#059669"},
+  {name:"职业", color:"#4f46e5"},
+  {name:"审稿", color:"#0f766e"},
+  {name:"其他", color:"#6b7280"}
+];
+const DEFAULT_TAG_COLORS = Object.fromEntries(DEFAULT_TAGS.map(t=>[t.name,t.color]));
+const FALLBACK_COLORS = ["#2563eb","#7c3aed","#0891b2","#db2777","#ea580c","#059669","#4f46e5","#0f766e","#ca8a04","#be123c","#4338ca","#0d9488"];
+
+let state = {version:2, autoBucket:true, tasks:[], tags:[], tombstones:{}, filterTag:"", query:"", tagPanelOpen:false};
+let syncCfg = {token:"", owner:"jsl210101", repo:"tools-data", path:"todo/tasks.json"};
+let remoteSha = null;
+let syncTimer = null;
+let syncState = "needsetup"; // needsetup|ok|syncing|offline|error
+let syncDetail = "";
+let bootReady = false;
+let undoStack = null;
+let toastTimer = null;
+let dragId = null;
+let dragFrom = null;
+let touchProxy = null;
+
+function uid(){return "t"+Date.now().toString(36)+Math.random().toString(36).slice(2,8)}
+
+function nowMs(){return Date.now()}
+function touchTask(t){ t.updatedAt = nowMs(); return t; }
+function loadSyncCfg(){
+  try{
+    const raw=localStorage.getItem(KEY_SYNC);
+    if(raw){
+      const p=JSON.parse(raw);
+      syncCfg = {
+        token: p.token||"",
+        owner: p.owner||"jsl210101",
+        repo: p.repo||"tools-data",
+        path: p.path||"todo/tasks.json"
+      };
+    }
+  }catch(e){}
+}
+function saveSyncCfg(){
+  localStorage.setItem(KEY_SYNC, JSON.stringify({
+    token: syncCfg.token||"",
+    owner: syncCfg.owner||"jsl210101",
+    repo: syncCfg.repo||"tools-data",
+    path: syncCfg.path||"todo/tasks.json"
+  }));
+}
+function hasToken(){ return !!(syncCfg.token && syncCfg.token.trim()); }
+function setSyncUI(status, detail){
+  syncState=status; syncDetail=detail||"";
+  const el=document.getElementById("syncStatus");
+  const d=document.getElementById("syncDetail");
+  if(!el) return;
+  el.className="sync-status "+status;
+  const map={needsetup:"未配置 Token", ok:"已同步", syncing:"同步中…", offline:"离线（用本地缓存）", error:"同步出错"};
+  el.textContent=map[status]||status;
+  if(d) d.textContent=syncDetail;
+}
+function b64ToUtf8(b64){
+  const bin=atob(b64.replace(/\n/g,""));
+  const bytes=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
+  return new TextDecoder("utf-8").decode(bytes);
+}
+function utf8ToB64(str){
+  const bytes=new TextEncoder().encode(str);
+  let bin="";
+  for(let i=0;i<bytes.length;i++) bin+=String.fromCharCode(bytes[i]);
+  return btoa(bin);
+}
+function apiHeaders(){
+  return {
+    "Authorization":"Bearer "+syncCfg.token.trim(),
+    "Accept":"application/vnd.github+json",
+    "X-GitHub-Api-Version":"2022-11-28"
+  };
+}
+function contentsUrl(){
+  return "https://api.github.com/repos/"+encodeURIComponent(syncCfg.owner)+"/"+encodeURIComponent(syncCfg.repo)+"/contents/"+syncCfg.path.split("/").map(encodeURIComponent).join("/");
+}
+function applyPayload(payload, {fromRemote}={}){
+  state.autoBucket = payload.autoBucket !== false;
+  state.tasks = (payload.tasks||[]).map(normalizeTask);
+  state.tags = mergeTagsFromTasks(Array.isArray(payload.tags)?payload.tags:defaultTags(), state.tasks);
+  state.tombstones = payload.tombstones && typeof payload.tombstones==="object" ? {...payload.tombstones} : {};
+  // drop tasks that are tombstoned
+  state.tasks = state.tasks.filter(t=>!state.tombstones[t.id]);
+  ensure其他();
+  cacheLocal();
+}
+function serializeState(){
+  ensure其他();
+  return {
+    version:2,
+    autoBucket: state.autoBucket,
+    tags: cloneTags(state.tags),
+    tasks: state.tasks.map(t=>{ const {editing,...rest}=t; return rest; }),
+    tombstones: {...(state.tombstones||{})},
+    savedAt: new Date().toISOString()
+  };
+}
+function cacheLocal(){
+  localStorage.setItem(KEY_V2, JSON.stringify(serializeState()));
+}
+function readLocalCache(){
+  try{
+    const raw=localStorage.getItem(KEY_V2);
+    if(!raw) return null;
+    return JSON.parse(raw);
+  }catch(e){ return null; }
+}
+function mergeStates(local, remote){
+  // Prefer newer updatedAt per task id; honor union of tombstones; drop tombstoned
+  const tombs={...(remote.tombstones||{}), ...(local.tombstones||{})};
+  const map=new Map();
+  const add=(list)=>{
+    (list||[]).forEach(raw=>{
+      const t=normalizeTask(raw);
+      if(tombs[t.id]) return;
+      const prev=map.get(t.id);
+      if(!prev || (t.updatedAt||0) >= (prev.updatedAt||0)) map.set(t.id, t);
+    });
+  };
+  // remote first then local so local newer wins via comparison
+  add(remote.tasks); add(local.tasks);
+  const tags=mergeTagsFromTasks([...(remote.tags||[]), ...(local.tags||[]), ...defaultTags()], [...map.values()]);
+  return {
+    version:2,
+    autoBucket: local.autoBucket !== undefined ? local.autoBucket : remote.autoBucket !== false,
+    tags,
+    tasks: [...map.values()],
+    tombstones: tombs,
+    savedAt: new Date().toISOString()
+  };
+}
+async function fetchRemote(){
+  const res=await fetch(contentsUrl(), {headers: apiHeaders(), cache:"no-store"});
+  if(res.status===404){
+    remoteSha=null;
+    return null;
+  }
+  if(!res.ok){
+    const text=await res.text();
+    throw new Error("HTTP "+res.status+" "+text.slice(0,180));
+  }
+  const data=await res.json();
+  remoteSha=data.sha;
+  const json=JSON.parse(b64ToUtf8(data.content));
+  return json;
+}
+async function putRemote(payload, message){
+  const body={
+    message: message||("todo sync "+new Date().toISOString()),
+    content: utf8ToB64(JSON.stringify(payload, null, 2)+"\n"),
+    branch: "main"
+  };
+  if(remoteSha) body.sha=remoteSha;
+  const res=await fetch(contentsUrl(), {
+    method:"PUT",
+    headers:{...apiHeaders(), "Content-Type":"application/json"},
+    body: JSON.stringify(body)
+  });
+  if(res.status===409 || res.status===422){
+    const err=new Error("SHA_CONFLICT");
+    err.code="SHA_CONFLICT";
+    err.http=res.status;
+    throw err;
+  }
+  if(!res.ok){
+    const text=await res.text();
+    throw new Error("HTTP "+res.status+" "+text.slice(0,180));
+  }
+  const data=await res.json();
+  remoteSha = data.content && data.content.sha ? data.content.sha : remoteSha;
+  return data;
+}
+async function syncPull({preferLocalMerge}={}){
+  if(!hasToken()){ setSyncUI("needsetup",""); return false; }
+  setSyncUI("syncing","拉取中");
+  try{
+    const remote=await fetchRemote();
+    if(!remote){
+      // create from local if we have any
+      const local=readLocalCache();
+      if(local && (local.tasks||[]).length){
+        applyPayload(local);
+        await putRemote(serializeState(), "todo: initial upload");
+        setSyncUI("ok","已创建远程文件");
+        return true;
+      }
+      applyPayload({tasks:[], tags:defaultTags(), tombstones:{}, autoBucket:true});
+      await putRemote(serializeState(), "todo: create empty");
+      setSyncUI("ok","已创建空清单");
+      return true;
+    }
+    if(preferLocalMerge){
+      const local=readLocalCache()||serializeState();
+      const merged=mergeStates(local, remote);
+      applyPayload(merged);
+    }else{
+      applyPayload(remote);
+    }
+    setSyncUI("ok", "更新于 "+(remote.savedAt||"刚刚"));
+    return true;
+  }catch(e){
+    const local=readLocalCache();
+    if(local){
+      applyPayload(local);
+      setSyncUI("offline", String(e.message||e).slice(0,120));
+      return false;
+    }
+    state.tasks=[]; state.tags=defaultTags(); state.tombstones={};
+    setSyncUI("error", String(e.message||e).slice(0,120));
+    return false;
+  }
+}
+async function syncPush(){
+  if(!hasToken() || !bootReady) return;
+  setSyncUI("syncing","上传中");
+  const payload=serializeState();
+  cacheLocal();
+  try{
+    await putRemote(payload);
+    setSyncUI("ok","刚才");
+  }catch(e){
+    if(e.code==="SHA_CONFLICT"){
+      setSyncUI("syncing","冲突，合并重试");
+      try{
+        const remote=await fetchRemote();
+        const merged=mergeStates(payload, remote||{tasks:[],tags:[],tombstones:{}});
+        applyPayload(merged);
+        await putRemote(serializeState(), "todo: merge after conflict");
+        setSyncUI("ok","已合并冲突");
+        render();
+      }catch(e2){
+        setSyncUI("error","冲突处理失败 "+String(e2.message||e2).slice(0,80));
+      }
+    }else{
+      setSyncUI("offline", String(e.message||e).slice(0,120));
+    }
+  }
+}
+function scheduleSync(){
+  cacheLocal();
+  if(!hasToken() || !bootReady) return;
+  clearTimeout(syncTimer);
+  syncTimer=setTimeout(()=>{ syncPush(); }, 1500);
+}
+function tagNames(){return (state.tags||[]).map(t=>t.name);}
+function ensure其他(){
+  if(!(state.tags||[]).some(t=>t.name==="其他")){
+    state.tags.push({name:"其他", color:DEFAULT_TAG_COLORS["其他"]||"#6b7280"});
+  }
+}
+function nextDefaultColor(){
+  const used=new Set((state.tags||[]).map(t=>t.color.toLowerCase()));
+  for(const c of FALLBACK_COLORS){ if(!used.has(c.toLowerCase())) return c; }
+  return FALLBACK_COLORS[(state.tags||[]).length % FALLBACK_COLORS.length];
+}
+function normalizeTagName(name){
+  return String(name||"").trim().replace(/\s+/g," ").slice(0,24);
+}
+function ensureTag(name, color){
+  const n=normalizeTagName(name);
+  if(!n) return "其他";
+  const existing=(state.tags||[]).find(t=>t.name===n);
+  if(existing){
+    if(color){ existing.color=color; saveState(); }
+    return n;
+  }
+  state.tags.push({name:n, color:color||nextDefaultColor()});
+  saveState();
+  return n;
+}
+function mergeTagsFromTasks(baseTags, tasks){
+  const map=new Map();
+  (baseTags||[]).forEach(t=>{ if(t&&t.name) map.set(t.name, {name:t.name, color:t.color||DEFAULT_TAG_COLORS[t.name]||nextDefaultColor()}); });
+  // Prefer default colors for known names when migrating old saves without tags array
+  DEFAULT_TAGS.forEach(t=>{ if(!map.has(t.name)) map.set(t.name, {name:t.name, color:t.color}); });
+  (tasks||[]).forEach(task=>{
+    const n=normalizeTagName(task.tag||"其他")||"其他";
+    if(!map.has(n)) map.set(n, {name:n, color:DEFAULT_TAG_COLORS[n]||nextDefaultColor()});
+  });
+  if(!map.has("其他")) map.set("其他", {name:"其他", color:DEFAULT_TAG_COLORS["其他"]});
+  // stable-ish order: defaults first, then others alpha
+  const defOrder=DEFAULT_TAGS.map(t=>t.name);
+  const names=[...map.keys()];
+  names.sort((a,b)=>{
+    const ia=defOrder.indexOf(a), ib=defOrder.indexOf(b);
+    if(ia>=0 && ib>=0) return ia-ib;
+    if(ia>=0) return -1;
+    if(ib>=0) return 1;
+    return a.localeCompare(b,"zh");
+  });
+  return names.map(n=>map.get(n));
+}
+function addTag(name, color){
+  const n=normalizeTagName(name);
+  if(!n){ showToast("请输入标签名称"); return null; }
+  if((state.tags||[]).some(t=>t.name===n)){ showToast("标签已存在："+n); return n; }
+  state.tags.push({name:n, color:color||nextDefaultColor()});
+  saveState(); render();
+  showToast("已添加标签「"+n+"」");
+  return n;
+}
+function renameTag(oldName, newName){
+  const n=normalizeTagName(newName);
+  if(!oldName) return false;
+  if(oldName==="其他" && n!=="其他"){ showToast("「其他」是默认标签，不能改名"); return false; }
+  if(!n){ showToast("名称不能为空"); return false; }
+  if(n!==oldName && (state.tags||[]).some(t=>t.name===n)){ showToast("已有同名标签"); return false; }
+  const tag=(state.tags||[]).find(t=>t.name===oldName);
+  if(!tag) return false;
+  tag.name=n;
+  state.tasks.forEach(t=>{ if(t.tag===oldName){ t.tag=n; touchTask(t); } });
+  if(state.filterTag===oldName) state.filterTag=n;
+  saveState(); render();
+  showToast("已重命名为「"+n+"」");
+  return true;
+}
+function recolorTag(name, color){
+  const tag=(state.tags||[]).find(t=>t.name===name);
+  if(!tag || !color) return false;
+  tag.color=color;
+  saveState(); render();
+  return true;
+}
+function deleteTag(name){
+  if(name==="其他"){ showToast("「其他」不能删除"); return false; }
+  const tag=(state.tags||[]).find(t=>t.name===name);
+  if(!tag) return false;
+  const count=state.tasks.filter(t=>t.tag===name).length;
+  const msg = count
+    ? ("确定删除标签「"+name+"」？将有 "+count+" 个任务改回「其他」。")
+    : ("确定删除标签「"+name+"」？");
+  if(!confirm(msg)) return false;
+  state.tags = state.tags.filter(t=>t.name!==name);
+  ensure其他();
+  state.tasks.forEach(t=>{ if(t.tag===name){ t.tag="其他"; touchTask(t); } });
+  if(state.filterTag===name) state.filterTag="";
+  saveState(); render();
+  showToast("已删除标签「"+name+"」");
+  return true;
+}
+
+function today(){
+  const d=new Date();
+  return fmtDate(d);
+}
+function fmtDate(d){
+  const y=d.getFullYear();
+  const m=String(d.getMonth()+1).padStart(2,"0");
+  const day=String(d.getDate()).padStart(2,"0");
+  return y+"-"+m+"-"+day;
+}
+function parseYMD(s){
+  if(!s) return null;
+  const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+  if(!m) return null;
+  return new Date(+m[1], +m[2]-1, +m[3]);
+}
+function addDays(ymd, n){
+  const d=parseYMD(ymd); if(!d) return null;
+  d.setDate(d.getDate()+n);
+  return fmtDate(d);
+}
+function startOfWeek(ymd){ // Mon-start
+  const d=parseYMD(ymd); if(!d) return null;
+  const day=d.getDay(); // 0 Sun
+  const diff = day===0 ? -6 : 1-day;
+  d.setDate(d.getDate()+diff);
+  return fmtDate(d);
+}
+function endOfWeek(ymd){
+  return addDays(startOfWeek(ymd), 6);
+}
+function startOfNextWeek(ymd){ return addDays(endOfWeek(ymd), 1); }
+function endOfNextWeek(ymd){ return addDays(startOfNextWeek(ymd), 6); }
+function daysBetween(a,b){
+  const da=parseYMD(a), db=parseYMD(b);
+  if(!da||!db) return null;
+  return Math.round((db-da)/86400000);
+}
+function escapeHtml(s){
+  return String(s==null?"":s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
+}
+
+function suggestBucket(task, now){
+  if(task.done) return "done";
+  if(!task.due) return task.bucket && task.bucket!=="done" ? task.bucket : "later";
+  const diff = daysBetween(now, task.due);
+  if(diff===null) return "later";
+  if(diff < 0) return "today"; // overdue stay visible in today
+  if(diff === 0) return "today";
+  if(diff === 1) return "tomorrow";
+  const eow = endOfWeek(now);
+  if(task.due <= eow) return "week";
+  const enw = endOfNextWeek(now);
+  if(task.due <= enw) return "nextweek";
+  return "later";
+}
+
+function effectiveBucket(task, now){
+  if(task.done) return "done";
+  // Manual drag pins the bucket until due date is edited or auto is re-applied
+  if(task.pinned) return task.bucket || "later";
+  if(state.autoBucket && task.due) return suggestBucket(task, now);
+  if(task.bucket==="done") return "later";
+  return task.bucket || "later";
+}
+function dueForBucket(bucket, now){
+  if(bucket==="today") return now;
+  if(bucket==="tomorrow") return addDays(now, 1);
+  if(bucket==="week") return endOfWeek(now);
+  if(bucket==="nextweek") return endOfNextWeek(now);
+  if(bucket==="later") return addDays(now, 21);
+  return null;
+}
+
+function seedTasks(){
+  // Intentionally empty: public page must not embed private task text.
+  return [];
+}
+
+function tryParseDueFromTitle(title){
+  // 11/5 or 11.5 or 11-5 → 2026-MM-DD
+  let m = /(\d{1,2})[./-](\d{1,2})/.exec(title);
+  if(m){
+    const mm=String(+m[1]).padStart(2,"0");
+    const dd=String(+m[2]).padStart(2,"0");
+    return "2026-"+mm+"-"+dd;
+  }
+  return null;
+}
+function tryParseWeight(title){
+  const m = /（?\(?(\d+(?:\.\d+)?%(?:\s*\+\s*\d+(?:\.\d+)?%)?)）?\)?/.exec(title);
+  return m ? m[1].replace(/\s+/g,"") : null;
+}
+function guessTag(title, group){
+  const codes=["1007","2008","2304","4002","4104"];
+  for(const c of codes){ if(title.includes(c)) return c; }
+  if(/审稿|Drive|百度网盘/.test(title)) return "审稿";
+  if(/简历|职规|coffee chat|面试/.test(title)) return "职业";
+  if(/超分子|实验|种子项目|文献|动物实验/.test(title)) return "科研";
+  if(/考试|DDL/.test(group||"")) return "其他";
+  return "其他";
+}
+function mapGroupToBucket(g){
+  if(/今天|我的一天/.test(g)) return "today";
+  if(/明天/.test(g)) return "tomorrow";
+  if(/下周/.test(g)) return "nextweek";
+  if(/本周/.test(g)) return "week";
+  if(/完成|已完成/.test(g)) return "done";
+  if(/考试|DDL|持续|以后|本月/.test(g)) return "later";
+  return "later";
+}
+
+function migrateFromV1(raw){
+  try{
+    const data = typeof raw==="string" ? JSON.parse(raw) : raw;
+    if(!Array.isArray(data)) return null;
+    const tasks=[];
+    let order=0;
+    data.forEach(grp=>{
+      const g = grp.g || grp.group || "";
+      const items = grp.items || [];
+      items.forEach(it=>{
+        const title = it.t || it.title || "";
+        const due = tryParseDueFromTitle(title);
+        const weight = tryParseWeight(title);
+        const bucket = it.d || it.done ? "done" : mapGroupToBucket(g);
+        tasks.push(normalizeTask({
+          title,
+          done: !!(it.d||it.done),
+          due,
+          weight,
+          tag: guessTag(title, g),
+          bucket,
+          order: order++,
+          important: !!weight,
+          completedAt: (it.d||it.done) ? Date.now() : null
+        }));
+      });
+    });
+    return tasks;
+  }catch(e){ return null; }
+}
+
+function loadState(){
+  // Public page: never seed. Only cache / remote.
+  state.tasks = [];
+  state.tags = defaultTags();
+  state.tombstones = {};
+  state.autoBucket = true;
+}
+
+function saveState(){
+  // Mark nothing globally; callers should touchTask on edited items.
+  cacheLocal();
+  scheduleSync();
+}
+
+function showToast(msg, undoFn){
+  const el=document.getElementById("toast");
+  document.getElementById("toastMsg").textContent=msg;
+  const btn=document.getElementById("toastUndo");
+  if(undoFn){
+    btn.style.display="";
+    btn.onclick=()=>{undoFn(); hideToast();};
+  }else{
+    btn.style.display="none";
+    btn.onclick=null;
+  }
+  el.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(hideToast, 5000);
+}
+function hideToast(){
+  document.getElementById("toast").classList.remove("show");
+  clearTimeout(toastTimer);
+}
+
+function deleteTask(id){
+  const idx=state.tasks.findIndex(t=>t.id===id);
+  if(idx<0) return;
+  const removed = state.tasks[idx];
+  const snapshotTasks = state.tasks.map(t=>({...t}));
+  const snapshotTombs = {...state.tombstones};
+  state.tasks.splice(idx,1);
+  state.tombstones[id] = nowMs();
+  saveState(); render();
+  showToast("已删除「"+removed.title.slice(0,20)+"」", ()=>{
+    state.tasks = snapshotTasks;
+    state.tombstones = snapshotTombs;
+    saveState(); render();
+  });
+}
+
+function toggleDone(id){
+  const t=state.tasks.find(x=>x.id===id);
+  if(!t) return;
+  t.done=!t.done;
+  t.completedAt = t.done ? Date.now() : null;
+  if(t.done) t.bucket="done";
+  else if(t.bucket==="done") t.bucket = t.due ? suggestBucket({...t,done:false}, today()) : "later";
+  touchTask(t);
+  saveState(); render();
+}
+
+function toggleStar(id){
+  const t=state.tasks.find(x=>x.id===id);
+  if(!t) return;
+  t.important=!t.important;
+  touchTask(t);
+  saveState(); render();
+}
+
+function moveTask(id, toBucket, beforeId){
+  const t=state.tasks.find(x=>x.id===id);
+  if(!t) return;
+  if(toBucket==="done"){
+    t.done=true; t.completedAt=t.completedAt||Date.now();
+    t.pinned=false;
+  }else if(t.done && toBucket!=="done"){
+    t.done=false; t.completedAt=null;
+  }
+  t.bucket=toBucket;
+  // Pin so smart-group won't immediately yank it back; due date is preserved
+  t.pinned = toBucket!=="done";
+  touchTask(t);
+
+  // reorder within destination
+  const now=today();
+  const dest = state.tasks
+    .filter(x=>x.id!==id && effectiveBucket(x,now)===toBucket)
+    .sort((a,b)=>a.order-b.order);
+  let orders=[];
+  if(!beforeId){
+    dest.forEach(x=>orders.push(x));
+    orders.push(t);
+  }else{
+    let inserted=false;
+    dest.forEach(x=>{
+      if(x.id===beforeId){ orders.push(t); inserted=true; }
+      orders.push(x);
+    });
+    if(!inserted) orders.push(t);
+  }
+  orders.forEach((x,i)=>{ x.order=i; touchTask(x); });
+  // keep others' relative order
+  saveState(); render();
+}
+
+function addTask(partial){
+  const title=(partial.title||"").trim();
+  if(!title) return;
+  const task=normalizeTask({
+    title,
+    tag: partial.tag || "其他",
+    due: partial.due || null,
+    note: partial.note || "",
+    bucket: partial.bucket || (partial.due ? suggestBucket({done:false,due:partial.due,bucket:"later"}, today()) : "today"),
+    weight: partial.weight || null,
+    important: !!partial.important,
+    order: Date.now()
+  });
+  touchTask(task);
+  state.tasks.unshift(task);
+  // creating undoes tombstone if same id reused
+  if(state.tombstones[task.id]) delete state.tombstones[task.id];
+  saveState(); render();
+}
+
+function taskMatches(t){
+  if(state.filterTag && t.tag!==state.filterTag) return false;
+  const q=(state.query||"").trim().toLowerCase();
+  if(!q) return true;
+  return [t.title,t.note,t.tag,t.weight||""].join(" ").toLowerCase().includes(q);
+}
+
+function dueClass(task, now){
+  if(!task.due || task.done) return "";
+  const diff=daysBetween(now, task.due);
+  if(diff===null) return "";
+  if(diff<0) return "overdue";
+  if(diff<=3) return "soon";
+  return "";
+}
+
+function formatDueLabel(task, now){
+  if(!task.due) return "";
+  const diff=daysBetween(now, task.due);
+  const d=parseYMD(task.due);
+  const md=(d.getMonth()+1)+"/"+d.getDate();
+  if(diff===null) return md;
+  if(diff<0) return "逾期 "+(-diff)+" 天 · "+md;
+  if(diff===0) return "今天截止 · "+md;
+  if(diff===1) return "明天 · "+md;
+  if(diff<=3) return diff+" 天后 · "+md;
+  return md;
+}
+function formatDueTime(task){
+  return task.dueTime ? (" "+task.dueTime) : "";
+}
+
+function fillTagDatalist(){
+  const dl=document.getElementById("tagDatalist");
+  if(!dl) return;
+  dl.innerHTML="";
+  tagNames().forEach(name=>{
+    const o=document.createElement("option");
+    o.value=name;
+    dl.appendChild(o);
+  });
+}
+
+function fillTagSelect(sel, selected){
+  // Supports <select> (edit panel) or leaves datalist inputs alone
+  if(!sel || sel.tagName!=="SELECT") return;
+  sel.innerHTML="";
+  tagNames().forEach(tag=>{
+    const o=document.createElement("option");
+    o.value=tag; o.textContent=tag;
+    if(tag===selected) o.selected=true;
+    sel.appendChild(o);
+  });
+  const create=document.createElement("option");
+  create.value="__new__";
+  create.textContent="＋ 新建标签…";
+  sel.appendChild(create);
+  if(selected && !tagNames().includes(selected)){
+    const o=document.createElement("option");
+    o.value=selected; o.textContent=selected+"（新）";
+    o.selected=true;
+    sel.insertBefore(o, create);
+  }
+}
+
+function resolveTagInput(value){
+  let v=normalizeTagName(value);
+  if(!v || v==="__new__"){
+    const typed=prompt("输入新标签名称：");
+    v=normalizeTagName(typed||"");
+    if(!v) return "其他";
+  }
+  return ensureTag(v);
+}
+
+function renderTagFilters(){
+  const box=document.getElementById("tagFilters");
+  const names=tagNames();
+  const tags=["",...names];
+  box.innerHTML="";
+  tags.forEach(tag=>{
+    const b=document.createElement("button");
+    b.type="button";
+    b.className="chip"+(state.filterTag===tag?" on":"");
+    if(tag){
+      const dot=document.createElement("span");
+      dot.style.cssText="display:inline-block;width:8px;height:8px;border-radius:50%;background:"+tagColor(tag)+";margin-right:5px;vertical-align:middle";
+      b.appendChild(dot);
+      b.appendChild(document.createTextNode(tag));
+    }else{
+      b.textContent="全部";
+    }
+    b.onclick=()=>{state.filterTag=tag; render();};
+    box.appendChild(b);
+  });
+  fillTagDatalist();
+  const quick=document.getElementById("quickTag");
+  if(quick && quick.tagName==="INPUT" && !quick.value) quick.placeholder="标签（可输入新建）";
+  renderTagPanel();
+}
+
+function renderTagPanel(){
+  const panel=document.getElementById("tagPanel");
+  if(!panel) return;
+  panel.classList.toggle("hidden", !state.tagPanelOpen);
+  const list=document.getElementById("tagList");
+  if(!list) return;
+  list.innerHTML="";
+  (state.tags||[]).forEach(tag=>{
+    const row=document.createElement("div");
+    row.className="tag-row";
+    const swatch=document.createElement("span");
+    swatch.className="swatch";
+    swatch.style.background=tag.color;
+    const nameInput=document.createElement("input");
+    nameInput.type="text";
+    nameInput.value=tag.name;
+    nameInput.maxLength=24;
+    nameInput.setAttribute("aria-label","标签名 "+tag.name);
+    if(tag.name==="其他") nameInput.title="默认标签，建议保留";
+    const colorInput=document.createElement("input");
+    colorInput.type="color";
+    colorInput.value=/^#[0-9a-fA-F]{6}$/.test(tag.color)?tag.color:"#6b7280";
+    colorInput.title="更改颜色";
+    colorInput.addEventListener("change", ()=>{ recolorTag(tag.name, colorInput.value); });
+    const saveBtn=document.createElement("button");
+    saveBtn.type="button";
+    saveBtn.className="btn sm";
+    saveBtn.textContent="保存名称";
+    saveBtn.onclick=()=>{
+      if(nameInput.value.trim()===tag.name) return;
+      renameTag(tag.name, nameInput.value);
+    };
+    nameInput.addEventListener("keydown", e=>{
+      if(e.key==="Enter"){ e.preventDefault(); saveBtn.click(); }
+    });
+    const delBtn=document.createElement("button");
+    delBtn.type="button";
+    delBtn.className="btn sm danger";
+    delBtn.textContent="删除";
+    delBtn.disabled = tag.name==="其他";
+    delBtn.onclick=()=>deleteTag(tag.name);
+    row.append(swatch, nameInput, colorInput, saveBtn, delBtn);
+    list.appendChild(row);
+  });
+}
+
+function renderStats(now){
+  const open=state.tasks.filter(t=>!t.done);
+  const overdue=open.filter(t=>t.due && daysBetween(now,t.due)<0).length;
+  const soon=open.filter(t=>{const d=t.due&&daysBetween(now,t.due); return d!==null && d>=0 && d<=3;}).length;
+  const todayN=open.filter(t=>effectiveBucket(t,now)==="today").length;
+  document.getElementById("stats").textContent=
+    "进行中 "+open.length+" · 今天 "+todayN+" · 3 天内到期 "+soon+(overdue?(" · 已逾期 "+overdue):"")+" · 已完成 "+state.tasks.filter(t=>t.done).length;
+}
+
+function renderTask(task, now){
+  const el=document.createElement("div");
+  const dc=dueClass(task, now);
+  el.className="task"+(task.important?" important":"")+(dc?" "+dc:"")+(task.done?" done-item":"");
+  el.draggable=true;
+  el.dataset.id=task.id;
+  el.setAttribute("role","listitem");
+
+  const dueLabel=formatDueLabel(task, now);
+  const dueCls = dc==="overdue"?"bad":(dc==="soon"?"warn":"");
+
+  el.innerHTML=
+    '<div class="task-row">'+
+      '<span class="handle" title="拖拽" aria-hidden="true">⠿</span>'+
+      '<input class="check" type="checkbox" '+(task.done?"checked":"")+' aria-label="完成">'+
+      '<div class="body">'+
+        '<div class="title'+(task.done?" struck":"")+'">'+escapeHtml(task.title)+'</div>'+
+        '<div class="meta">'+
+          '<span class="tag" style="background:'+tagColor(task.tag)+'">'+escapeHtml(task.tag)+'</span>'+
+          (dueLabel?'<span class="due '+dueCls+'">'+escapeHtml(dueLabel)+escapeHtml(formatDueTime(task))+'</span>':'')+
+          (task.weight?'<span class="weight">占比 '+escapeHtml(task.weight)+'</span>':'')+
+        '</div>'+
+        (task.note && !task.editing ? '<div class="note">'+escapeHtml(task.note)+'</div>' : '')+
+      '</div>'+
+      '<div class="actions">'+
+        '<button type="button" class="iconbtn star'+(task.important?" on":"")+'" title="重要" data-act="star">'+(task.important?"★":"☆")+'</button>'+
+        '<button type="button" class="iconbtn" title="编辑" data-act="edit">✎</button>'+
+        '<button type="button" class="iconbtn" title="删除" data-act="del">×</button>'+
+      '</div>'+
+    '</div>';
+
+  if(task.editing){
+    const panel=document.createElement("div");
+    panel.className="edit-panel";
+    panel.innerHTML=
+      '<div class="field"><label>标题</label><input data-f="title" value="'+escapeHtml(task.title)+'"></div>'+
+      '<div class="field"><label>截止日期</label><input data-f="due" type="date" value="'+(task.due||"")+'"></div>'+
+      '<div class="field"><label>截止时间（可选）</label><input data-f="dueTime" type="time" value="'+(task.dueTime||"")+'"></div>'+
+      '<div class="field"><label>标签</label><div class="tag-combo"><select data-f="tag"></select></div></div>'+
+      '<div class="field"><label>考试占比（可选）</label><input data-f="weight" placeholder="如 47.5%" value="'+escapeHtml(task.weight||"")+'"></div>'+
+      '<div class="field"><label>备注</label><textarea data-f="note">'+escapeHtml(task.note||"")+'</textarea></div>'+
+      '<div class="edit-actions"><button type="button" class="btn sm" data-act="cancel">取消</button><button type="button" class="btn sm primary" data-act="save">保存</button></div>';
+    const tagSel=panel.querySelector('[data-f="tag"]');
+    fillTagSelect(tagSel, task.tag);
+    tagSel.addEventListener("change", ()=>{
+      if(tagSel.value==="__new__"){
+        const created=resolveTagInput("__new__");
+        fillTagSelect(tagSel, created);
+        fillTagDatalist();
+      }
+    });
+    el.querySelector(".body").appendChild(panel);
+  }
+
+  // events
+  el.querySelector(".check").addEventListener("change", ()=>toggleDone(task.id));
+  el.querySelector('[data-act="star"]').addEventListener("click", e=>{e.stopPropagation(); toggleStar(task.id);});
+  el.querySelector('[data-act="del"]').addEventListener("click", e=>{e.stopPropagation(); deleteTask(task.id);});
+  el.querySelector('[data-act="edit"]').addEventListener("click", e=>{
+    e.stopPropagation();
+    state.tasks.forEach(x=>x.editing=false);
+    task.editing=true; render();
+  });
+  el.querySelector(".title").addEventListener("dblclick", ()=>{
+    state.tasks.forEach(x=>x.editing=false);
+    task.editing=true; render();
+  });
+
+  if(task.editing){
+    const panel=el.querySelector(".edit-panel");
+    panel.querySelector('[data-act="cancel"]').onclick=()=>{task.editing=false; render();};
+    panel.querySelector('[data-act="save"]').onclick=()=>{
+      task.title=panel.querySelector('[data-f="title"]').value.trim()||task.title;
+      task.due=panel.querySelector('[data-f="due"]').value||null;
+      task.dueTime=panel.querySelector('[data-f="dueTime"]').value||null;
+      task.tag=resolveTagInput(panel.querySelector('[data-f="tag"]').value)||"其他";
+      task.weight=panel.querySelector('[data-f="weight"]').value.trim()||null;
+      task.note=panel.querySelector('[data-f="note"]').value;
+      task.editing=false;
+      task.pinned=false;
+      touchTask(task);
+      if(state.autoBucket && task.due && !task.done){
+        task.bucket=suggestBucket(task, today());
+      } else if(!task.done){
+        task.bucket = task.bucket==="done" ? "later" : (task.bucket || "later");
+      }
+      saveState(); render();
+    };
+  }
+
+  // HTML5 drag
+  el.addEventListener("dragstart", e=>{
+    dragId=task.id;
+    dragFrom=effectiveBucket(task, now);
+    el.classList.add("dragging");
+    e.dataTransfer.effectAllowed="move";
+    e.dataTransfer.setData("text/plain", task.id);
+  });
+  el.addEventListener("dragend", ()=>{
+    el.classList.remove("dragging");
+    dragId=null;
+    document.querySelectorAll(".bucket.drag-over").forEach(b=>b.classList.remove("drag-over"));
+  });
+  el.addEventListener("dragover", e=>{
+    e.preventDefault();
+    e.dataTransfer.dropEffect="move";
+  });
+  el.addEventListener("drop", e=>{
+    e.preventDefault();
+    e.stopPropagation();
+    const id=e.dataTransfer.getData("text/plain")||dragId;
+    if(!id || id===task.id) return;
+    const bucket=effectiveBucket(task, now);
+    moveTask(id, bucket, task.id);
+  });
+
+  // Pointer / touch fallback (long-press drag via handle or whole card)
+  setupPointerDrag(el, task);
+
+  return el;
+}
+
+function setupPointerDrag(el, task){
+  let tracking=false, startX=0, startY=0, clone=null, moved=false;
+  const handle=el.querySelector(".handle");
+
+  const onDown=(e)=>{
+    if(e.button!==undefined && e.button!==0) return;
+    if(e.target.closest("input,textarea,select,button,.edit-panel")) return;
+    // require handle on mouse; allow whole card on touch
+    const isTouch = e.pointerType==="touch" || e.pointerType==="pen";
+    if(!isTouch && e.target!==handle && !handle.contains(e.target)) return;
+    tracking=true; moved=false;
+    startX=e.clientX; startY=e.clientY;
+    el.setPointerCapture(e.pointerId);
+  };
+  const onMove=(e)=>{
+    if(!tracking) return;
+    const dx=e.clientX-startX, dy=e.clientY-startY;
+    if(!moved && Math.hypot(dx,dy)<8) return;
+    if(!moved){
+      moved=true;
+      dragId=task.id;
+      el.classList.add("dragging");
+      clone=el.cloneNode(true);
+      clone.style.position="fixed";
+      clone.style.pointerEvents="none";
+      clone.style.zIndex="100";
+      clone.style.width=el.offsetWidth+"px";
+      clone.style.opacity="0.9";
+      clone.style.boxShadow="0 8px 24px rgba(0,0,0,.18)";
+      document.body.appendChild(clone);
+    }
+    clone.style.left=(e.clientX-40)+"px";
+    clone.style.top=(e.clientY-20)+"px";
+    const under=document.elementFromPoint(e.clientX, e.clientY);
+    document.querySelectorAll(".bucket.drag-over").forEach(b=>b.classList.remove("drag-over"));
+    const bucket=under && under.closest(".bucket");
+    if(bucket) bucket.classList.add("drag-over");
+  };
+  const onUp=(e)=>{
+    if(!tracking) return;
+    tracking=false;
+    try{el.releasePointerCapture(e.pointerId);}catch(_){}
+    if(clone){clone.remove(); clone=null;}
+    el.classList.remove("dragging");
+    const over=document.querySelector(".bucket.drag-over");
+    document.querySelectorAll(".bucket.drag-over").forEach(b=>b.classList.remove("drag-over"));
+    if(moved && over){
+      const to=over.dataset.bucket;
+      const under=document.elementFromPoint(e.clientX, e.clientY);
+      const overTask=under && under.closest(".task");
+      const beforeId = overTask && overTask.dataset.id !== task.id ? overTask.dataset.id : null;
+      moveTask(task.id, to, beforeId);
+    }
+    dragId=null; moved=false;
+  };
+  el.addEventListener("pointerdown", onDown);
+  el.addEventListener("pointermove", onMove);
+  el.addEventListener("pointerup", onUp);
+  el.addEventListener("pointercancel", onUp);
+}
+
+function renderBucket(bucket, now){
+  const col=document.createElement("section");
+  col.className="bucket"+(bucket.id==="done"?" done":"");
+  col.dataset.bucket=bucket.id;
+
+  const tasks=state.tasks
+    .filter(t=>taskMatches(t) && effectiveBucket(t,now)===bucket.id)
+    .sort((a,b)=>{
+      if(!!a.important !== !!b.important) return a.important ? -1 : 1;
+      if(a.due && b.due && a.due!==b.due) return a.due < b.due ? -1 : 1;
+      if(a.due && !b.due) return -1;
+      if(!a.due && b.due) return 1;
+      return a.order - b.order;
+    });
+
+  const openCount=tasks.filter(t=>!t.done).length;
+  const countLabel = bucket.id==="done" ? String(tasks.length) : (openCount+"/"+tasks.length);
+
+  col.innerHTML=
+    '<div class="bucket-hd"><h2><span>'+bucket.emoji+'</span> '+escapeHtml(bucket.name)+
+    '</h2><span class="count">'+countLabel+'</span></div><div class="list" data-list="1"></div>';
+
+  const list=col.querySelector(".list");
+  if(!tasks.length){
+    const empty=document.createElement("div");
+    empty.className="empty";
+    empty.textContent = bucket.id==="done" ? "完成任务会出现在这里" : "拖拽任务到这里，或在上方添加";
+    list.appendChild(empty);
+  }else if(bucket.id==="done"){
+    const wrap=document.createElement("details");
+    wrap.open = tasks.length <= 8;
+    const sum=document.createElement("summary");
+    sum.className="collapse-btn";
+    sum.textContent="展开 / 收起已完成（"+tasks.length+"）";
+    wrap.appendChild(sum);
+    const inner=document.createElement("div");
+    tasks.forEach(t=>inner.appendChild(renderTask(t, now)));
+    wrap.appendChild(inner);
+    list.appendChild(wrap);
+  }else{
+    tasks.forEach(t=>list.appendChild(renderTask(t, now)));
+  }
+
+  col.addEventListener("dragover", e=>{
+    e.preventDefault();
+    col.classList.add("drag-over");
+    e.dataTransfer.dropEffect="move";
+  });
+  col.addEventListener("dragleave", e=>{
+    if(!col.contains(e.relatedTarget)) col.classList.remove("drag-over");
+  });
+  col.addEventListener("drop", e=>{
+    e.preventDefault();
+    col.classList.remove("drag-over");
+    const id=e.dataTransfer.getData("text/plain")||dragId;
+    if(!id) return;
+    // if dropped on empty area, append
+    const targetTask=e.target.closest && e.target.closest(".task");
+    if(targetTask && targetTask.dataset.id!==id) return; // handled by task drop
+    moveTask(id, bucket.id, null);
+  });
+
+  return col;
+}
+
+function render(){
+  const now=today();
+  document.getElementById("autoBucket").checked = !!state.autoBucket;
+  renderTagFilters();
+  renderStats(now);
+  const board=document.getElementById("board");
+  board.innerHTML="";
+  BUCKETS.forEach(b=>board.appendChild(renderBucket(b, now)));
+}
+
+function exportJSON(){
+  const payload={
+    ...serializeState(),
+    exportedAt:new Date().toISOString()
+  };
+  const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="winnie-tasks-backup-"+today()+".json";
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+  showToast("已导出备份文件");
+}
+
+function importJSON(file){
+  const reader=new FileReader();
+  reader.onload=()=>{
+    try{
+      const data=JSON.parse(reader.result);
+      let tasks=[];
+      let tags=null;
+      const snapTasks=state.tasks.map(t=>({...t}));
+      const snapTags=cloneTags(state.tags);
+      if(Array.isArray(data)){
+        // maybe v1
+        tasks=migrateFromV1(data) || data.map(normalizeTask);
+        tags=mergeTagsFromTasks(defaultTags(), tasks);
+      }else if(data && Array.isArray(data.tasks)){
+        tasks=data.tasks.map(normalizeTask);
+        if(typeof data.autoBucket==="boolean") state.autoBucket=data.autoBucket;
+        tags=mergeTagsFromTasks(Array.isArray(data.tags)?data.tags:defaultTags(), tasks);
+      }else throw new Error("格式不对");
+      const snapTombs={...state.tombstones};
+      state.tasks=tasks;
+      state.tags=tags;
+      if(data && data.tombstones) state.tombstones={...data.tombstones};
+      ensure其他();
+      saveState(); render();
+      showToast("已导入 "+tasks.length+" 条任务", ()=>{
+        state.tasks=snapTasks; state.tags=snapTags; state.tombstones=snapTombs; saveState(); render();
+      });
+    }catch(err){
+      showToast("导入失败：请选择有效的 JSON 备份");
+    }
+  };
+  reader.readAsText(file);
+}
+
+// wire UI
+document.getElementById("btnAdd").onclick=()=>{
+  const tagVal=resolveTagInput(document.getElementById("quickTag").value || "其他");
+  addTask({
+    title: document.getElementById("quickTitle").value,
+    tag: tagVal,
+    due: document.getElementById("quickDue").value || null,
+    bucket: "today"
+  });
+  document.getElementById("quickTitle").value="";
+  document.getElementById("quickTag").value=tagVal;
+};
+document.getElementById("btnTagManage").onclick=()=>{
+  state.tagPanelOpen=!state.tagPanelOpen;
+  renderTagPanel();
+  document.getElementById("btnTagManage").textContent = state.tagPanelOpen ? "收起标签管理" : "管理标签";
+};
+document.getElementById("btnAddTag").onclick=()=>{
+  const name=document.getElementById("newTagName").value;
+  const color=document.getElementById("newTagColor").value;
+  if(addTag(name, color)){
+    document.getElementById("newTagName").value="";
+  }
+};
+document.getElementById("newTagName").addEventListener("keydown", e=>{
+  if(e.key==="Enter"){ e.preventDefault(); document.getElementById("btnAddTag").click(); }
+});
+document.getElementById("quickTitle").addEventListener("keydown", e=>{
+  if(e.key==="Enter"){ e.preventDefault(); document.getElementById("btnAdd").click(); }
+});
+document.getElementById("search").addEventListener("input", e=>{
+  state.query=e.target.value; render();
+});
+document.getElementById("autoBucket").addEventListener("change", e=>{
+  state.autoBucket=e.target.checked;
+  if(state.autoBucket){
+    const now=today();
+    state.tasks.forEach(t=>{
+      t.pinned=false;
+      if(!t.done) t.bucket = suggestBucket(t, now);
+    });
+  }
+  saveState(); render();
+});
+document.getElementById("btnExport").onclick=exportJSON;
+document.getElementById("btnImport").onclick=()=>document.getElementById("importFile").click();
+document.getElementById("importFile").addEventListener("change", e=>{
+  const f=e.target.files && e.target.files[0];
+  if(f) importJSON(f);
+  e.target.value="";
+});
+
+function fillSyncForm(){
+  document.getElementById("cfgToken").value = syncCfg.token || "";
+  document.getElementById("cfgOwner").value = syncCfg.owner || "jsl210101";
+  document.getElementById("cfgRepo").value = syncCfg.repo || "tools-data";
+  document.getElementById("cfgPath").value = syncCfg.path || "todo/tasks.json";
+}
+function updateVisibility(){
+  const ready = hasToken() && bootReady && (syncState==="ok" || syncState==="offline" || syncState==="syncing" || syncState==="error");
+  const showData = hasToken() && bootReady;
+  ["stats","tagFilters","tagManageWrap","quick","board"].forEach(()=>{});
+  const show = showData;
+  document.getElementById("stats").classList.toggle("hidden", !show);
+  document.getElementById("tagFilters").classList.toggle("hidden", !show);
+  document.getElementById("tagManageWrap").classList.toggle("hidden", !show);
+  document.querySelector(".quick").classList.toggle("hidden", !show);
+  document.getElementById("board").classList.toggle("hidden", !show);
+  // Setup card: always available via settings; forced visible when no token
+  const setup=document.getElementById("setupCard");
+  const force = !hasToken();
+  if(force) setup.classList.remove("hidden");
+}
+async function boot(){
+  loadSyncCfg();
+  fillSyncForm();
+  loadState();
+  fillTagDatalist();
+  const quickTagEl=document.getElementById("quickTag");
+  if(quickTagEl) quickTagEl.value="其他";
+  if(!hasToken()){
+    bootReady=false;
+    setSyncUI("needsetup","粘贴 Token 后才能查看任务");
+    updateVisibility();
+    document.getElementById("setupCard").classList.remove("hidden");
+    render(); // empty
+    return;
+  }
+  setSyncUI("syncing","首次拉取");
+  updateVisibility();
+  const ok=await syncPull({preferLocalMerge:false});
+  bootReady=true;
+  updateVisibility();
+  render();
+  if(ok) setSyncUI("ok", syncDetail||"已就绪");
+}
+
+document.getElementById("btnSyncSettings").onclick=()=>{
+  fillSyncForm();
+  document.getElementById("setupCard").classList.toggle("hidden");
+};
+document.getElementById("btnSaveSync").onclick=async ()=>{
+  syncCfg.token=document.getElementById("cfgToken").value.trim();
+  syncCfg.owner=document.getElementById("cfgOwner").value.trim()||"jsl210101";
+  syncCfg.repo=document.getElementById("cfgRepo").value.trim()||"tools-data";
+  syncCfg.path=document.getElementById("cfgPath").value.trim()||"todo/tasks.json";
+  saveSyncCfg();
+  if(!hasToken()){ showToast("请填写 Token"); return; }
+  document.getElementById("setupCard").classList.add("hidden");
+  bootReady=false;
+  setSyncUI("syncing","连接中");
+  const ok=await syncPull({preferLocalMerge:true});
+  bootReady=true;
+  updateVisibility();
+  render();
+  showToast(ok?"已连接并同步":"已用本地缓存（离线）");
+};
+document.getElementById("btnClearSync").onclick=()=>{
+  syncCfg.token="";
+  saveSyncCfg();
+  remoteSha=null;
+  bootReady=false;
+  state.tasks=[]; state.tags=defaultTags(); state.tombstones={};
+  setSyncUI("needsetup","已清除 Token");
+  updateVisibility();
+  document.getElementById("setupCard").classList.remove("hidden");
+  render();
+};
+document.getElementById("btnSyncNow").onclick=async ()=>{
+  if(!hasToken()){ document.getElementById("setupCard").classList.remove("hidden"); return; }
+  await syncPull({preferLocalMerge:true});
+  render();
+  await syncPush();
+};
+
+window.addEventListener("focus", ()=>{
+  if(hasToken() && bootReady){ syncPull({preferLocalMerge:true}).then(()=>render()); }
+});
+document.addEventListener("visibilitychange", ()=>{
+  if(document.visibilityState==="visible" && hasToken() && bootReady){
+    syncPull({preferLocalMerge:true}).then(()=>render());
+  }
+});
+
+boot();
+
+// expose for tests
+window.__todo = {
+  getState: ()=>state,
+  getSync: ()=>({cfg:{...syncCfg, token: syncCfg.token?"***":""}, sha:remoteSha, syncState, syncDetail}),
+  setTokenForTest: (token)=>{ syncCfg.token=token; saveSyncCfg(); },
+  boot, syncPull, syncPush, scheduleSync, moveTask, addTask, saveState, loadState,
+  KEY_V2, KEY_V1, KEY_SYNC, today, effectiveBucket, suggestBucket,
+  addTag, renameTag, recolorTag, deleteTag, ensureTag, tagColor, tagNames, toggleDone,
+  serializeState, mergeStates, hasToken
+};
+})();
+</script>
+</body>
+</html>

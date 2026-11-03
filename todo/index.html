@@ -118,6 +118,31 @@ button,input,select,textarea{font:inherit}
 .tag-combo input[list]{min-width:110px;border:1px solid var(--line);border-radius:8px;padding:8px 10px}
 .quick .tag-combo{flex:0 0 auto}
 
+
+.badge-post{font-size:11px;padding:2px 7px;border-radius:999px;font-weight:700;display:inline-flex;align-items:center;gap:2px}
+.badge-post.g1{background:#f3f4f6;color:#4b5563}
+.badge-post.g2{background:#ffedd5;color:#c2410c}
+.badge-post.g3{background:#fee2e2;color:#b91c1c}
+.badge-comp{font-size:11px;padding:2px 7px;border-radius:999px;font-weight:650}
+.badge-comp.early{background:#ecfdf5;color:#047857}
+.badge-comp.ontime{background:#eff6ff;color:#1d4ed8}
+.badge-comp.late{background:#fef2f2;color:#b91c1c}
+.task.chronic{border-left:3px solid #ef4444 !important;box-shadow:inset 3px 0 0 rgba(239,68,68,.15)}
+.week-strip{font-size:12px;color:var(--muted);margin:-2px 0 12px;padding:8px 12px;background:var(--card);border:1px solid var(--line);border-radius:10px;cursor:pointer;user-select:none;box-shadow:var(--shadow)}
+.week-strip:hover{border-color:#bfdbfe;background:var(--accent-soft)}
+.week-strip .nums{font-weight:650;color:var(--text)}
+.week-detail{margin-top:8px;padding-top:8px;border-top:1px dashed var(--line);display:none}
+.week-strip.open .week-detail{display:block}
+.week-detail li{margin:4px 0;font-size:12px}
+.modal-mask{position:fixed;inset:0;background:rgba(17,24,39,.45);z-index:80;display:flex;align-items:center;justify-content:center;padding:16px}
+.modal-mask.hidden{display:none}
+.modal{background:#fff;border-radius:14px;padding:18px;max-width:420px;width:100%;box-shadow:0 20px 50px rgba(0,0,0,.2)}
+.modal h3{margin:0 0 8px;font-size:16px}
+.modal p{margin:0 0 12px;color:var(--muted);font-size:13px}
+.modal .field{margin-bottom:10px}
+.modal .field input[type=text],.modal .field textarea{width:100%;border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.modal .actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;margin-top:8px}
+.confirm-later{display:flex;align-items:flex-start;gap:8px;font-size:13px;background:#fff7ed;border:1px solid #fed7aa;padding:10px;border-radius:8px;margin-bottom:10px}
 @media (max-width:640px){
   .board{grid-template-columns:1fr}
   .app{padding:12px 10px 90px}
@@ -159,6 +184,7 @@ button,input,select,textarea{font:inherit}
   </div>
 
   <div class="stats" id="stats"></div>
+  <div class="week-strip" id="weekStrip" title="点击展开本周延期最多的任务">加载中…</div>
   <div class="filters" id="tagFilters"></div>
   <div class="tag-manage-wrap" id="tagManageWrap">
     <button type="button" class="btn sm" id="btnTagManage">管理标签</button>
@@ -184,6 +210,37 @@ button,input,select,textarea{font:inherit}
   </div>
 
   <div class="board" id="board"></div>
+</div>
+
+
+<div class="modal-mask hidden" id="postponeModal" role="dialog" aria-modal="true" aria-labelledby="postponeModalTitle">
+  <div class="modal">
+    <h3 id="postponeModalTitle">为什么又拖？</h3>
+    <p>这是第 <strong id="postponeModalCount">3</strong> 次延期。写下原因（可选），或拆成更小的一步。</p>
+    <div class="field"><label style="font-size:12px;color:var(--muted)">延期原因（可选）</label>
+      <input type="text" id="postponeReason" placeholder="例如：材料还没齐 / 今天太满了" maxlength="120">
+    </div>
+    <div class="field"><label style="font-size:12px;color:var(--muted)">拆成更小一步（可选）</label>
+      <input type="text" id="postponeSubtask" placeholder="例如：先列出大纲" maxlength="80">
+    </div>
+    <div class="actions">
+      <button type="button" class="btn" id="postponeSkip">跳过</button>
+      <button type="button" class="btn" id="postponeBreak">拆成更小一步</button>
+      <button type="button" class="btn primary" id="postponeSave">记下原因</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-mask hidden" id="frictionModal" role="dialog" aria-modal="true" aria-labelledby="frictionModalTitle">
+  <div class="modal">
+    <h3 id="frictionModalTitle">再次延期确认</h3>
+    <p>「<span id="frictionTitle"></span>」已延期 <strong id="frictionCount"></strong> 次。从第 5 次起需要确认后才能继续往后拖。</p>
+    <label class="confirm-later"><input type="checkbox" id="frictionCheck"> 我知道我又在拖了</label>
+    <div class="actions">
+      <button type="button" class="btn" id="frictionCancel">取消</button>
+      <button type="button" class="btn primary" id="frictionOk" disabled>确认延期</button>
+    </div>
+  </div>
 </div>
 
 <div class="toast" id="toast"><span id="toastMsg"></span><button type="button" id="toastUndo">撤销</button></div>
@@ -665,11 +722,25 @@ function seedTasks(){
 }
 
 function normalizeTask(raw){
+  const due = raw.due || null;
+  const hist = Array.isArray(raw.moveHistory) ? raw.moveHistory.slice(-20).map(h=>({
+    at: typeof h.at==="number" ? h.at : nowMs(),
+    fromBucket: h.fromBucket || null,
+    toBucket: h.toBucket || null,
+    fromDue: h.fromDue || null,
+    toDue: h.toDue || null,
+    kind: h.kind==="later"||h.kind==="earlier"||h.kind==="done" ? h.kind : "later"
+  })) : [];
+  const reasons = Array.isArray(raw.postponeReasons) ? raw.postponeReasons.slice(-20).map(r=>({
+    at: typeof r.at==="number" ? r.at : nowMs(),
+    text: String(r.text||"").slice(0,120),
+    count: typeof r.count==="number" ? r.count : null
+  })) : [];
   return {
     id: raw.id || uid(),
     title: String(raw.title||raw.t||"").trim() || "未命名任务",
     done: !!(raw.done||raw.d),
-    due: raw.due || null,
+    due: due,
     dueTime: raw.dueTime || null,
     note: raw.note || "",
     important: !!raw.important,
@@ -681,8 +752,290 @@ function normalizeTask(raw){
     created: raw.created || Date.now(),
     completedAt: raw.completedAt || null,
     updatedAt: typeof raw.updatedAt==="number" ? raw.updatedAt : (raw.created || Date.now()),
+    postponeCount: typeof raw.postponeCount==="number" ? Math.max(0, raw.postponeCount|0) : 0,
+    moveHistory: hist,
+    firstScheduledDue: raw.firstScheduledDue || due || null,
+    completion: raw.completion==="early"||raw.completion==="onTime"||raw.completion==="late" ? raw.completion : null,
+    postponeReasons: reasons,
     editing: false
   };
+}
+
+const BUCKET_RANK = {today:0, tomorrow:1, week:2, nextweek:3, later:4, done:5};
+
+function ensureFirstScheduled(t){
+  if(!t.firstScheduledDue && t.due) t.firstScheduledDue = t.due;
+}
+
+function classifyMoveKind(fromBucket, toBucket, fromDue, toDue){
+  if(toBucket==="done") return "done";
+  if(fromDue && toDue && toDue!==fromDue){
+    if(toDue > fromDue) return "later";
+    if(toDue < fromDue) return "earlier";
+  }
+  // no due change (or missing): fall back to column rank
+  if(fromBucket && toBucket && fromBucket!==toBucket){
+    const fo = BUCKET_RANK[fromBucket];
+    const to = BUCKET_RANK[toBucket];
+    if(typeof fo==="number" && typeof to==="number"){
+      if(to > fo) return "later";
+      if(to < fo) return "earlier";
+    }
+  }
+  // due newly set from empty while staying / moving later column already handled
+  if(!fromDue && toDue && fromBucket && toBucket){
+    const fo = BUCKET_RANK[fromBucket], to = BUCKET_RANK[toBucket];
+    if(typeof fo==="number" && typeof to==="number" && to > fo) return "later";
+    return "earlier"; // first scheduling / earlier column → not a postpone
+  }
+  return null;
+}
+
+function recordMove(t, {fromBucket, toBucket, fromDue, toDue, kind}){
+  ensureFirstScheduled(t);
+  if(!kind) return 0;
+  if(!Array.isArray(t.moveHistory)) t.moveHistory=[];
+  t.moveHistory.push({
+    at: nowMs(),
+    fromBucket: fromBucket||null,
+    toBucket: toBucket||null,
+    fromDue: fromDue||null,
+    toDue: toDue||null,
+    kind
+  });
+  if(t.moveHistory.length>20) t.moveHistory=t.moveHistory.slice(-20);
+  if(kind==="later"){
+    t.postponeCount = (t.postponeCount||0) + 1;
+    return t.postponeCount;
+  }
+  return t.postponeCount||0;
+}
+
+function classifyCompletion(t, completedAtMs){
+  if(!t.due) return null;
+  const when = new Date(completedAtMs || Date.now());
+  const doneDay = fmtDate(when);
+  if(doneDay < t.due) return "early";
+  if(doneDay > t.due) return "late";
+  if(t.dueTime){
+    const m=/^(\d{1,2}):(\d{2})/.exec(t.dueTime);
+    if(m){
+      const dueDt=parseYMD(t.due);
+      if(dueDt){
+        dueDt.setHours(+m[1], +m[2], 0, 0);
+        return when.getTime() <= dueDt.getTime() ? "onTime" : "late";
+      }
+    }
+  }
+  return "onTime";
+}
+
+function daysSinceFirstScheduled(t, now){
+  if(!t.firstScheduledDue) return null;
+  const base = t.firstScheduledDue;
+  const cur = t.due || now;
+  return daysBetween(base, cur);
+}
+
+function isChronic(t){
+  if((t.postponeCount||0) < 3 || t.done) return false;
+  const age = nowMs() - (t.updatedAt||0);
+  return age >= 3*86400000;
+}
+
+function weekStartMs(nowYmd){
+  const sow = startOfWeek(nowYmd); // Monday
+  const d = parseYMD(sow);
+  return d ? d.getTime() : 0;
+}
+
+function weekStats(now){
+  const start = weekStartMs(now);
+  const end = start + 7*86400000;
+  let postponeN=0;
+  const byTask={};
+  state.tasks.forEach(t=>{
+    (t.moveHistory||[]).forEach(h=>{
+      if(h.kind!=="later") return;
+      if(h.at>=start && h.at<end){
+        postponeN++;
+        byTask[t.id]=(byTask[t.id]||0)+1;
+      }
+    });
+  });
+  const completed = state.tasks.filter(t=>{
+    if(!t.done || !t.completedAt) return false;
+    return t.completedAt>=start && t.completedAt<end;
+  });
+  const early = completed.filter(t=>t.completion==="early").length;
+  const onTimeish = completed.filter(t=>t.completion==="early"||t.completion==="onTime").length;
+  const rate = completed.length ? Math.round(100*onTimeish/completed.length) : null;
+  const top = Object.entries(byTask)
+    .map(([id,n])=>{
+      const t=state.tasks.find(x=>x.id===id);
+      return t ? {id, n, title:t.title, postponeCount:t.postponeCount||0} : null;
+    })
+    .filter(Boolean)
+    .sort((a,b)=>b.n-a.n || b.postponeCount-a.postponeCount)
+    .slice(0,3);
+  return {postponeN, early, rate, completedN: completed.length, top};
+}
+
+let pendingPostponeModal = null; // {taskId, count}
+let pendingFriction = null; // {id, toBucket, beforeId, resolve}
+let weekStripOpen = false;
+
+function showPostponeModal(task, count){
+  pendingPostponeModal = {taskId: task.id, count};
+  document.getElementById("postponeModalCount").textContent=String(count);
+  document.getElementById("postponeReason").value="";
+  document.getElementById("postponeSubtask").value="";
+  document.getElementById("postponeModal").classList.remove("hidden");
+  setTimeout(()=>document.getElementById("postponeReason").focus(), 50);
+}
+function hidePostponeModal(){
+  document.getElementById("postponeModal").classList.add("hidden");
+  pendingPostponeModal=null;
+}
+function finishPostponeModal({saveReason, doBreak}){
+  const pend=pendingPostponeModal;
+  if(!pend){ hidePostponeModal(); return; }
+  const t=state.tasks.find(x=>x.id===pend.taskId);
+  if(t){
+    if(saveReason){
+      const text=(document.getElementById("postponeReason").value||"").trim();
+      if(text){
+        if(!Array.isArray(t.postponeReasons)) t.postponeReasons=[];
+        t.postponeReasons.push({at:nowMs(), text:text.slice(0,120), count:pend.count});
+        if(t.postponeReasons.length>20) t.postponeReasons=t.postponeReasons.slice(-20);
+        touchTask(t);
+      }
+    }
+    if(doBreak){
+      let sub=(document.getElementById("postponeSubtask").value||"").trim();
+      if(!sub) sub=prompt("拆成哪一步？")||"";
+      sub=sub.trim();
+      if(sub){
+        addTask({title: sub, tag: t.tag||"其他", bucket:"today", due: today()});
+        showToast("已加子任务到「今天」");
+      }
+    }
+    saveState();
+  }
+  hidePostponeModal();
+  render();
+}
+
+function requestFriction(task, toBucket, beforeId){
+  return new Promise(resolve=>{
+    pendingFriction={id:task.id, toBucket, beforeId, resolve};
+    document.getElementById("frictionTitle").textContent=task.title.slice(0,40);
+    document.getElementById("frictionCount").textContent=String(task.postponeCount||0);
+    const ck=document.getElementById("frictionCheck");
+    ck.checked=false;
+    document.getElementById("frictionOk").disabled=true;
+    document.getElementById("frictionModal").classList.remove("hidden");
+  });
+}
+function hideFriction(ok){
+  const pend=pendingFriction;
+  document.getElementById("frictionModal").classList.add("hidden");
+  pendingFriction=null;
+  if(pend && pend.resolve) pend.resolve(!!ok);
+}
+
+function applyMoveCore(id, toBucket, beforeId){
+  const t=state.tasks.find(x=>x.id===id);
+  if(!t) return;
+  const now=today();
+  const fromBucket = t.done ? "done" : (t.bucket || effectiveBucket(t, now));
+  const fromDue = t.due || null;
+  let kind=null;
+  if(toBucket==="done"){
+    t.done=true;
+    t.completedAt=t.completedAt||Date.now();
+    t.completion = classifyCompletion(t, t.completedAt);
+    t.bucket="done";
+    t.pinned=false;
+    kind="done";
+    recordMove(t,{fromBucket,toBucket,fromDue,toDue:t.due,kind});
+  }else{
+    if(t.done){ t.done=false; t.completedAt=null; t.completion=null; }
+    const newDue=dueForBucket(toBucket, now);
+    const toDue = newDue || t.due || null;
+    if(newDue) t.due=newDue; // keep existing dueTime
+    t.bucket=toBucket;
+    const suggested=suggestBucket({...t, done:false}, now);
+    t.pinned = suggested!==toBucket;
+    kind = classifyMoveKind(fromBucket, toBucket, fromDue, toDue);
+    const newCount = recordMove(t,{fromBucket,toBucket,fromDue,toDue,kind});
+    if(kind==="later" && newCount===3){
+      // defer modal until after reorder/save
+      pendingPostponeModal = {taskId:t.id, count:3, _defer:true};
+    }
+  }
+  touchTask(t);
+
+  const dest = state.tasks
+    .filter(x=>x.id!==id && effectiveBucket(x,now)===toBucket)
+    .sort((a,b)=>a.order-b.order);
+  let orders=[];
+  if(!beforeId){
+    dest.forEach(x=>orders.push(x));
+    orders.push(t);
+  }else{
+    let inserted=false;
+    dest.forEach(x=>{
+      if(x.id===beforeId){ orders.push(t); inserted=true; }
+      orders.push(x);
+    });
+    if(!inserted) orders.push(t);
+  }
+  orders.forEach((x,i)=>{ x.order=i; touchTask(x); });
+  saveState(); render();
+  if(pendingPostponeModal && pendingPostponeModal._defer){
+    const task=state.tasks.find(x=>x.id===pendingPostponeModal.taskId);
+    if(task) showPostponeModal(task, 3);
+    else pendingPostponeModal=null;
+  }
+}
+
+async function moveTask(id, toBucket, beforeId){
+  const t=state.tasks.find(x=>x.id===id);
+  if(!t) return;
+  const now=today();
+  const fromBucket = t.done ? "done" : (t.bucket || effectiveBucket(t, now));
+  if(toBucket==="done"){
+    applyMoveCore(id, toBucket, beforeId);
+    return;
+  }
+  const fromDue = t.due || null;
+  const newDue = dueForBucket(toBucket, now);
+  const toDue = newDue || t.due || null;
+  const kind = classifyMoveKind(fromBucket, toBucket, fromDue, toDue);
+  // From 5th postpone on: current count >= 4 and this move would be later
+  if(kind==="later" && (t.postponeCount||0) >= 4){
+    const ok = await requestFriction(t, toBucket, beforeId);
+    if(!ok){ render(); return; } // cancel → revert (never applied)
+  }
+  applyMoveCore(id, toBucket, beforeId);
+}
+
+function applyDueEdit(t, oldDue, newDue){
+  ensureFirstScheduled(t);
+  if((oldDue||null)===(newDue||null)) return;
+  const kind = classifyMoveKind(t.bucket, t.bucket, oldDue, newDue);
+  // due-only edit: if classify returned null because buckets same and dues differ, recompute
+  let k = kind;
+  if(!k && oldDue && newDue){
+    if(newDue > oldDue) k="later";
+    else if(newDue < oldDue) k="earlier";
+  }
+  if(!k && !oldDue && newDue) k="earlier"; // first set not a postpone
+  const newCount = recordMove(t,{fromBucket:t.bucket,toBucket:t.bucket,fromDue:oldDue,toDue:newDue,kind:k});
+  if(k==="later" && newCount===3){
+    pendingPostponeModal={taskId:t.id,count:3,_defer:true};
+  }
 }
 
 function tryParseDueFromTitle(title){
@@ -802,10 +1155,18 @@ function deleteTask(id){
 function toggleDone(id){
   const t=state.tasks.find(x=>x.id===id);
   if(!t) return;
+  const fromBucket = t.done ? "done" : (t.bucket || effectiveBucket(t, today()));
   t.done=!t.done;
-  t.completedAt = t.done ? Date.now() : null;
-  if(t.done) t.bucket="done";
-  else if(t.bucket==="done") t.bucket = t.due ? suggestBucket({...t,done:false}, today()) : "later";
+  if(t.done){
+    t.completedAt = Date.now();
+    t.completion = classifyCompletion(t, t.completedAt);
+    t.bucket="done";
+    recordMove(t,{fromBucket,toBucket:"done",fromDue:t.due,toDue:t.due,kind:"done"});
+  }else{
+    t.completedAt = null;
+    t.completion = null;
+    if(t.bucket==="done") t.bucket = t.due ? suggestBucket({...t,done:false}, today()) : "later";
+  }
   touchTask(t);
   saveState(); render();
 }
@@ -818,46 +1179,8 @@ function toggleStar(id){
   saveState(); render();
 }
 
-function moveTask(id, toBucket, beforeId){
-  const t=state.tasks.find(x=>x.id===id);
-  if(!t) return;
-  const now=today();
-  if(toBucket==="done"){
-    t.done=true; t.completedAt=t.completedAt||Date.now();
-    t.bucket="done";
-    t.pinned=false;
-    // due / dueTime unchanged when completing
-  }else{
-    if(t.done){ t.done=false; t.completedAt=null; }
-    const newDue=dueForBucket(toBucket, now);
-    if(newDue) t.due=newDue; // keep existing dueTime
-    t.bucket=toBucket;
-    // Stay consistent with smart-group: pin only if due alone would land elsewhere
-    const suggested=suggestBucket({...t, done:false}, now);
-    t.pinned = suggested!==toBucket;
-  }
-  touchTask(t);
+/* moveTask defined above with postpone logic */
 
-  // reorder within destination
-  const dest = state.tasks
-    .filter(x=>x.id!==id && effectiveBucket(x,now)===toBucket)
-    .sort((a,b)=>a.order-b.order);
-  let orders=[];
-  if(!beforeId){
-    dest.forEach(x=>orders.push(x));
-    orders.push(t);
-  }else{
-    let inserted=false;
-    dest.forEach(x=>{
-      if(x.id===beforeId){ orders.push(t); inserted=true; }
-      orders.push(x);
-    });
-    if(!inserted) orders.push(t);
-  }
-  orders.forEach((x,i)=>{ x.order=i; touchTask(x); });
-  // keep others' relative order
-  saveState(); render();
-}
 
 function addTask(partial){
   const title=(partial.title||"").trim();
@@ -870,8 +1193,10 @@ function addTask(partial){
     bucket: partial.bucket || (partial.due ? suggestBucket({done:false,due:partial.due,bucket:"later"}, today()) : "today"),
     weight: partial.weight || null,
     important: !!partial.important,
-    order: Date.now()
+    order: Date.now(),
+    firstScheduledDue: partial.due || null
   });
+  ensureFirstScheduled(task);
   touchTask(task);
   state.tasks.unshift(task);
   // creating undoes tombstone if same id reused
@@ -1033,18 +1358,51 @@ function renderStats(now){
   const todayN=open.filter(t=>effectiveBucket(t,now)==="today").length;
   document.getElementById("stats").textContent=
     "进行中 "+open.length+" · 今天 "+todayN+" · 3 天内到期 "+soon+(overdue?(" · 已逾期 "+overdue):"")+" · 已完成 "+state.tasks.filter(t=>t.done).length;
+  renderWeekStrip(now);
+}
+
+function renderWeekStrip(now){
+  const el=document.getElementById("weekStrip");
+  if(!el) return;
+  const s=weekStats(now);
+  const rateTxt = s.rate===null ? "—" : (s.rate+"%");
+  el.classList.toggle("open", !!weekStripOpen);
+  let detail="";
+  if(weekStripOpen){
+    if(!s.top.length) detail='<div class="week-detail">本周还没有延期记录 🎉</div>';
+    else{
+      detail='<div class="week-detail"><div style="margin-bottom:4px;font-weight:600;color:var(--text)">本周延期最多</div><ol style="margin:0;padding-left:18px">'+
+        s.top.map(x=>'<li>'+escapeHtml(x.title.slice(0,36))+' <span class="nums">×'+x.n+'</span>（累计 '+x.postponeCount+'）</li>').join("")+
+        '</ol></div>';
+    }
+  }
+  el.innerHTML='<span class="nums">本周延期 ×'+s.postponeN+'</span> · 准时率 <span class="nums">'+rateTxt+'</span> · 提前完成 <span class="nums">×'+s.early+'</span>'+detail;
 }
 
 function renderTask(task, now){
   const el=document.createElement("div");
   const dc=dueClass(task, now);
-  el.className="task"+(task.important?" important":"")+(dc?" "+dc:"")+(task.done?" done-item":"");
+  el.className="task"+(task.important?" important":"")+(dc?" "+dc:"")+(task.done?" done-item":"")+(isChronic(task)?" chronic":"");
   el.draggable=true;
   el.dataset.id=task.id;
   el.setAttribute("role","listitem");
 
   const dueLabel=formatDueLabel(task, now);
   const dueCls = dc==="overdue"?"bad":(dc==="soon"?"warn":"");
+  const pc = task.postponeCount||0;
+  let postBadge="";
+  if(!task.done && pc>0){
+    const g = pc>=3?"g3":(pc===2?"g2":"g1");
+    const slip = daysSinceFirstScheduled(task, now);
+    const tip = "已延期 "+pc+" 次"+(slip!==null ? (" · 距首次排期 "+slip+" 天") : "");
+    postBadge='<span class="badge-post '+g+'" title="'+escapeHtml(tip)+'">⏳×'+pc+(pc>=3?" ⚠️":"")+'</span>';
+  }
+  let compBadge="";
+  if(task.done && task.completion){
+    if(task.completion==="early") compBadge='<span class="badge-comp early" title="提前完成">🌱 提前</span>';
+    else if(task.completion==="onTime") compBadge='<span class="badge-comp ontime" title="准时完成">✓ 准时</span>';
+    else if(task.completion==="late") compBadge='<span class="badge-comp late" title="超期完成">⏰ 超期</span>';
+  }
 
   el.innerHTML=
     '<div class="task-row">'+
@@ -1056,6 +1414,7 @@ function renderTask(task, now){
           '<span class="tag" style="background:'+tagColor(task.tag)+'">'+escapeHtml(task.tag)+'</span>'+
           (dueLabel?'<span class="due '+dueCls+'">'+escapeHtml(dueLabel)+escapeHtml(formatDueTime(task))+'</span>':'')+
           (task.weight?'<span class="weight">占比 '+escapeHtml(task.weight)+'</span>':'')+
+          postBadge+compBadge+
         '</div>'+
         (task.note && !task.editing ? '<div class="note">'+escapeHtml(task.note)+'</div>' : '')+
       '</div>'+
@@ -1106,15 +1465,35 @@ function renderTask(task, now){
   if(task.editing){
     const panel=el.querySelector(".edit-panel");
     panel.querySelector('[data-act="cancel"]').onclick=()=>{task.editing=false; render();};
-    panel.querySelector('[data-act="save"]').onclick=()=>{
-      task.title=panel.querySelector('[data-f="title"]').value.trim()||task.title;
-      task.due=panel.querySelector('[data-f="due"]').value||null;
-      task.dueTime=panel.querySelector('[data-f="dueTime"]').value||null;
-      task.tag=resolveTagInput(panel.querySelector('[data-f="tag"]').value)||"其他";
-      task.weight=panel.querySelector('[data-f="weight"]').value.trim()||null;
-      task.note=panel.querySelector('[data-f="note"]').value;
+    panel.querySelector('[data-act="save"]').onclick=async ()=>{
+      const oldDue=task.due||null;
+      const newTitle=panel.querySelector('[data-f="title"]').value.trim()||task.title;
+      const newDue=panel.querySelector('[data-f="due"]').value||null;
+      const newDueTime=panel.querySelector('[data-f="dueTime"]').value||null;
+      const newTag=resolveTagInput(panel.querySelector('[data-f="tag"]').value)||"其他";
+      const newWeight=panel.querySelector('[data-f="weight"]').value.trim()||null;
+      const newNote=panel.querySelector('[data-f="note"]').value;
+      let k=null;
+      if((oldDue||null)!==(newDue||null)){
+        if(oldDue && newDue){
+          if(newDue>oldDue) k="later";
+          else if(newDue<oldDue) k="earlier";
+        } else if(!oldDue && newDue) k="earlier";
+        else if(oldDue && !newDue) k="earlier";
+      }
+      if(k==="later" && (task.postponeCount||0)>=4){
+        const ok=await requestFriction(task, task.bucket, null);
+        if(!ok){ task.editing=false; render(); return; }
+      }
+      task.title=newTitle;
+      task.due=newDue;
+      task.dueTime=newDueTime;
+      task.tag=newTag;
+      task.weight=newWeight;
+      task.note=newNote;
       task.editing=false;
       task.pinned=false;
+      applyDueEdit(task, oldDue, newDue);
       touchTask(task);
       if(state.autoBucket && task.due && !task.done){
         task.bucket=suggestBucket(task, today());
@@ -1122,6 +1501,11 @@ function renderTask(task, now){
         task.bucket = task.bucket==="done" ? "later" : (task.bucket || "later");
       }
       saveState(); render();
+      if(pendingPostponeModal && pendingPostponeModal._defer){
+        const tt=state.tasks.find(x=>x.id===pendingPostponeModal.taskId);
+        if(tt) showPostponeModal(tt, pendingPostponeModal.count);
+        else pendingPostponeModal=null;
+      }
     };
   }
 
@@ -1405,6 +1789,7 @@ function updateVisibility(){
   ["stats","tagFilters","tagManageWrap","quick","board"].forEach(()=>{});
   const show = showData;
   document.getElementById("stats").classList.toggle("hidden", !show);
+  document.getElementById("weekStrip").classList.toggle("hidden", !show);
   document.getElementById("tagFilters").classList.toggle("hidden", !show);
   document.getElementById("tagManageWrap").classList.toggle("hidden", !show);
   document.querySelector(".quick").classList.toggle("hidden", !show);
@@ -1437,6 +1822,29 @@ async function boot(){
   render();
   if(ok) setSyncUI("ok", syncDetail||"已就绪");
 }
+
+
+document.getElementById("weekStrip").addEventListener("click", ()=>{
+  weekStripOpen=!weekStripOpen;
+  renderWeekStrip(today());
+});
+document.getElementById("postponeSkip").onclick=()=>finishPostponeModal({saveReason:false, doBreak:false});
+document.getElementById("postponeSave").onclick=()=>finishPostponeModal({saveReason:true, doBreak:false});
+document.getElementById("postponeBreak").onclick=()=>finishPostponeModal({saveReason:true, doBreak:true});
+document.getElementById("frictionCheck").addEventListener("change", e=>{
+  document.getElementById("frictionOk").disabled=!e.target.checked;
+});
+document.getElementById("frictionCancel").onclick=()=>hideFriction(false);
+document.getElementById("frictionOk").onclick=()=>{
+  if(!document.getElementById("frictionCheck").checked) return;
+  hideFriction(true);
+};
+document.getElementById("postponeModal").addEventListener("click", e=>{
+  if(e.target.id==="postponeModal") finishPostponeModal({saveReason:false, doBreak:false});
+});
+document.getElementById("frictionModal").addEventListener("click", e=>{
+  if(e.target.id==="frictionModal") hideFriction(false);
+});
 
 document.getElementById("btnSyncSettings").onclick=()=>{
   fillSyncForm();
@@ -1495,7 +1903,9 @@ window.__todo = {
   boot, syncPull, syncPush, scheduleSync, moveTask, addTask, saveState, loadState,
   KEY_V2, KEY_V1, KEY_SYNC, today, effectiveBucket, suggestBucket,
   addTag, renameTag, recolorTag, deleteTag, ensureTag, tagColor, tagNames, toggleDone,
-  serializeState, mergeStates, hasToken
+  serializeState, mergeStates, hasToken,
+  classifyMoveKind, recordMove, classifyCompletion, applyDueEdit, applyMoveCore,
+  weekStats, isChronic, BUCKET_RANK, normalizeTask
 };
 })();
 </script>

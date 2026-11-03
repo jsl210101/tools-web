@@ -631,12 +631,31 @@ function effectiveBucket(task, now){
   if(task.bucket==="done") return "later";
   return task.bucket || "later";
 }
+function endOfMonth(ymd){
+  const d=parseYMD(ymd); if(!d) return null;
+  const last=new Date(d.getFullYear(), d.getMonth()+1, 0);
+  return fmtDate(last);
+}
 function dueForBucket(bucket, now){
+  // Map a column drop to a concrete due date (keeps dueTime elsewhere).
+  // Dates are chosen so suggestBucket() usually returns the same bucket.
   if(bucket==="today") return now;
   if(bucket==="tomorrow") return addDays(now, 1);
-  if(bucket==="week") return endOfWeek(now);
+  if(bucket==="week"){
+    let target=endOfWeek(now); // this Sunday (Mon-start week)
+    const diff=daysBetween(now, target);
+    // Sunday already in 今天/明天 → use day-after-tomorrow
+    if(diff!==null && diff<=1) target=addDays(now, 2);
+    return target;
+  }
   if(bucket==="nextweek") return endOfNextWeek(now);
-  if(bucket==="later") return addDays(now, 21);
+  if(bucket==="later"){
+    let target=endOfMonth(now);
+    const enw=endOfNextWeek(now);
+    // Must sit after next week so smart-group keeps it in 本月/以后
+    if(!target || target<=enw) target=addDays(enw, 1);
+    return target;
+  }
   return null;
 }
 
@@ -802,19 +821,24 @@ function toggleStar(id){
 function moveTask(id, toBucket, beforeId){
   const t=state.tasks.find(x=>x.id===id);
   if(!t) return;
+  const now=today();
   if(toBucket==="done"){
     t.done=true; t.completedAt=t.completedAt||Date.now();
+    t.bucket="done";
     t.pinned=false;
-  }else if(t.done && toBucket!=="done"){
-    t.done=false; t.completedAt=null;
+    // due / dueTime unchanged when completing
+  }else{
+    if(t.done){ t.done=false; t.completedAt=null; }
+    const newDue=dueForBucket(toBucket, now);
+    if(newDue) t.due=newDue; // keep existing dueTime
+    t.bucket=toBucket;
+    // Stay consistent with smart-group: pin only if due alone would land elsewhere
+    const suggested=suggestBucket({...t, done:false}, now);
+    t.pinned = suggested!==toBucket;
   }
-  t.bucket=toBucket;
-  // Pin so smart-group won't immediately yank it back; due date is preserved
-  t.pinned = toBucket!=="done";
   touchTask(t);
 
   // reorder within destination
-  const now=today();
   const dest = state.tasks
     .filter(x=>x.id!==id && effectiveBucket(x,now)===toBucket)
     .sort((a,b)=>a.order-b.order);
